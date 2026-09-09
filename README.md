@@ -32,16 +32,16 @@ For example the following compiles:
  odd(S(x))  = even(x)
  odd(Z)     = False
 ```
-because "even(Z)= True" tells the compiler that there is a single output.
-If the first two lines were swapped, it would not compile because the number of outputs of "even" based on even(S(x)) = odd(x)" depends on the number of outputs of "odd(x)", which is not yet known.
-Note that the reverse order for "odd" (above) works because the first instance is defined in terms of something whose number outputs is known.
+because `even(Z)= True` tells the compiler that there is a single output.
+If the first two lines were swapped, it would not compile because the number of outputs of `even` based on `even(S(x)) = odd(x)` depends on the number of outputs of `odd(x)`, which is not yet known.
+Note that the reverse order for `odd` (above) works because the first instance is defined in terms of something whose number outputs is known.
 
 Functions must start with lower-case letters and can include numbers but not other punctuation.
 (Sometimes other punctuation will be accepted but may clash with internally generated functions for certain flags, or not be accepted by INPLA.)
 Constructors start with capital letters and are otherwise the same.
 Variable (port) labels have same rules as functions.
 
-Comments are full lines only and start with "--", e.g. 
+Comments are full lines only and start with `--`, e.g. 
  -- This is a comment.
  id(Z) = Z -- This will cause an error
 
@@ -54,12 +54,12 @@ The output in interactive mode is made up of:
 
 Rules can be cut and pasted in INPLA one at a time or all at once. 
 Make sure not to copy anything else, such as the FLIN input code as INPLA will not accept it.
-If you paste mutiple rules into INPLA you get a warning that this "may result in the unexpected execution of commands". In my experience, this can be ignored but the pasting often occurs all over the screen which is harmless but somewhat disconcerting.
+If you paste mutiple rules into INPLA you get a warning that this `may result in the unexpected execution of commands`. In my experience, this can be ignored but the pasting often occurs all over the screen which is harmless but somewhat disconcerting.
 
 You can then enter a single FLIN term at the prompt which will be translated to INPLA.
 Cutting and pasting that into INPLA will evaluate it.
 Unless asked for, INPLA does not give the resulting net. 
-Either enter (one at a time or together split by spaces) the name(s) of the port(s) you wish to see the resulting nets at, or enter "ifce" to see the entire net.
+Either enter (one at a time or together split by spaces) the name(s) of the port(s) you wish to see the resulting nets at, or enter `ifce` to see the entire net.
 Further FLIN terms can be entered; enter :Q to quit.
 
 Note that three INPLA rules are always included:
@@ -74,13 +74,13 @@ It is easiest to always copy these also as they are only used if necessary but t
 In batch mode, the input file should be as for interactive mode but following the function definitions there must be a term to be evaluated.
 It is assumed that the term is the final line in the file so there cannot be anything after it including blank lines and comments.
 
-The compiler will output, in the same directory it is in, a file with the same name as the input file but with the extension ".in".
+The compiler will output, in the same directory it is in, a file with the same name as the input file but with the extension `.in`.
 
 INPLA run with the -f flag will read the entire file, evaluate the net and print the nets attached to all output ports.
 
 Beware #1 !! All the example files are written for interactive use.  For batch use, add a blank line and then a term to be run.
-Beware #2 !! The files in "example files" are in DOS text format.
-For use on UNIX-type systems, use "example_files_unix".
+Beware #2 !! The files in `example files` are in DOS text format.
+For use on UNIX-type systems, use `example_files_unix`.
 
 
 ## 3) Compile and run shell script
@@ -104,7 +104,7 @@ The following sections describe how the flags work and give the files that demon
 The numbering follows the abstract's section numbers.
 
 
-## 4.1) Base FLIN
+### 4.1) Base FLIN
 Base FLIN is the compilation method if run without any flags.
 
 Allows user-defined functions and constructors to be used according to the syntactic restrictions of function-constructor nets, that is the LHS is made up of a function applied to a constructor where each variable (port) occurs once and the RHS is a function-constructor net in which each variable (port) occurs once.
@@ -145,7 +145,7 @@ Example files using only base FLIN:
 - generics.txt
 
 
-## 4.2) Implicit memory management
+### 4.2) Implicit memory management
 If the `-imm` flag is included, FLIN will add INPLA's in-built Eraser and Dupl agents as necessary.
 Note that these are capitalised so do not follow our lower-case for functions syntax.
 
@@ -157,7 +157,7 @@ Example files using implicit memory management:
 - imm.txt
 
 
-## 4.3_ Nested pattern matching
+### 4.3_ Nested pattern matching
 ---------------------------
 If the `-npm` flag is included, FLIN will generate extra agents and rules to deal with nested pattern matching.
 
@@ -170,7 +170,7 @@ Example files using nested pattern matching:
 (Currently the full nested pattern matching algorithm is not implemented; only an example for lists).
 
 
-## 4.5) Multiple principal ports
+### 4.5) Multiple principal ports
 ----------------------------
 If the `-mpp` flag is present, FLIN will follow the translation described in the cited paper to generate extra agents and rules to deal with multiple principal ports.
 
@@ -183,13 +183,13 @@ Example files using multiple principal ports:
 - por.txt - to show where this fails.
 
 
-## 4.6) Higher-order functions
+### 4.6) Higher-order functions
 --------------------------
 The `-hof` flag tells FLIN that one or more rules uses higher-order functions.
 These are then translated into INPLA rules utilising the special higher order constructor `i_lam` as described in the abstract.
-Similarly, terms using higher-order functions will be modified to nets including "i_app".
+Similarly, terms using higher-order functions will be modified to nets including `i_app`.
 
-As described in the abstract, these must be noted in rules with a leading "^" and are called by writing the function name followed by empty parentheses.
+As described in the abstract, these must be noted in rules with a leading `^` and are called by writing the function name followed by empty parentheses.
 
 For example, the rules for map:
  map([], ^f)    = []
@@ -207,7 +207,7 @@ Example files using higher-order functions:
 This is a demonstration of the viability of the approach, not a industry-ready compiler!
 In particular, not all errors are caught and those that are have messages designed for the author not the user.
 
-For example, swapping the first two lines of the example "even" and "odd" function definitions in Section 1, above, gives the mixture of internal and Haskell error messages:
+For example, swapping the first two lines of the example `even` and `odd` function definitions in Section 1, above, gives the mixture of internal and Haskell error messages:
 ```text
     flin: funcNumOuts reaches end of LUT for odd
     CallStack (from HasCallStack):
