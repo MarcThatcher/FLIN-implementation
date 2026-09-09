@@ -1,5 +1,4 @@
 # README -- FLIN to INPLA compiler
---------------------------------
 
 (For simplicity the term "FLIN" is used to refer to both the language and the compiler below.)
 
@@ -20,18 +19,19 @@ The above works on MacOS/Unix and Windows but INPLA requires MacOS/Unix so the f
 The -bat flag runs FLIN in batch mode, otherwise it enters interactive mode (see below).
 
 
-Interactive mode
-----------------
+## 1) Interactive mode
 In interactive mode, FLIN reads the filename given and translates all the definitions therein.
 
-The input file must be a plain text file (*.txt) with one function definition per line.
+The input file must be a plain text file (`*.txt`) with one function definition per line.
 Because function definitions do not explicitly state the numbers of outputs they have, a definition which implies it must be given before one that does not.
 Therefore the base case of a function must be given before the recursive case.
 For example the following compiles:
+```text
  even(Z)    = True
  even(S(x)) = odd(x)
  odd(S(x))  = even(x)
  odd(Z)     = False
+```
 because "even(Z)= True" tells the compiler that there is a single output.
 If the first two lines were swapped, it would not compile because the number of outputs of "even" based on even(S(x)) = odd(x)" depends on the number of outputs of "odd(x)", which is not yet known.
 Note that the reverse order for "odd" (above) works because the first instance is defined in terms of something whose number outputs is known.
@@ -69,8 +69,7 @@ Note that three INPLA rules are always included:
 It is easiest to always copy these also as they are only used if necessary but they need not be copied if the resulting INPLA rules and terms do not use them.
 
 
-Batch mode
-----------
+## 2) Batch mode
 (Please read the explanation for interactive mode before reading this.)
 In batch mode, the input file should be as for interactive mode but following the function definitions there must be a term to be evaluated.
 It is assumed that the term is the final line in the file so there cannot be anything after it including blank lines and comments.
@@ -84,8 +83,7 @@ Beware #2 !! The files in "example files" are in DOS text format.
 For use on UNIX-type systems, use "example_files_unix".
 
 
-Compile and run shell script
-----------------------------
+## 3) Compile and run shell script
 There is also a bash script, flin.sh, which takes flags and a text file, runs FLIN in batch mode and pipes output into INPLA for execution.
 It assumes the two executables are in the same directory.
 To make it executable, run command 
@@ -93,8 +91,7 @@ To make it executable, run command
 and then run it as ./flin.sh [flags] filename.txt.
 
 
-Flags
------
+## 4) Flags
 The following flags can be used in both modes:
 - -imm: implicit memory management; see 4.2.
 - -npm: nested pattern matching; see 4.3.
@@ -107,8 +104,7 @@ The following sections describe how the flags work and give the files that demon
 The numbering follows the abstract's section numbers.
 
 
-4. Base FLIN
-------------
+## 4.1) Base FLIN
 Base FLIN is the compilation method if run without any flags.
 
 Allows user-defined functions and constructors to be used according to the syntactic restrictions of function-constructor nets, that is the LHS is made up of a function applied to a constructor where each variable (port) occurs once and the RHS is a function-constructor net in which each variable (port) occurs once.
@@ -117,7 +113,7 @@ In addition generic constructors (see 4.1) and natural numbers with succ and pre
 If a function is defined with a specific constructor and also with a generic constructor of the same arity, only the rule for the specific constructor will be compiled.
 For example, the rules
  e(True) = Error
- e(*)    = -
+ e(\*)    = -
 are compiled to
  e(r) >< True => ERROR()~r;
  e(r) >< (int x) => ;
@@ -127,16 +123,20 @@ The first follows the first rule, the second always occurs because (int x) is im
 All generated output includes the succ and pred rules as they are not part of INPLA and need to be defined using INPLA addition, which is not part of FLIN.
 
 As per the abstract, natural number variables must be noted with a leading underscore, for example:
+```text
  add(0,  n) = n
  add(_m,_n) = succ(add(pred(m),n))
-Note that, due to INPLA's requirements, the "n" in the base case must not be flagged as a number and neither "m" nor "n" should be flagged on the RHS.
+```
+Note that, due to INPLA's requirements, the `n` in the base case must not be flagged as a number and neither `m` nor `n` should be flagged on the RHS.
 FLIN will still compile if this is done, but the result will be either semantically or syntactically incorrect INPLA rules.
 
 INPLA treats natural numbers as an agent without a label with an "attribute" (see citation) which is the number.
 The translation of rules with natural numbers therefore looks very different from others, as they are of the form:
+```text
  foo(r,<vars>)><(int x) | x==n_0 => ... | x==n_1 => ... | ... | x==n_m => ... | _ => ...
+```
 with one n_i for each rule involving a specific value of x.
-If there is not a rule covering the general case of x (i.e. x a variable) then, as per INPLA syntax there needs to be the final, catch-all case ("_"), this is set to "_ => r~ERROR".
+If there is not a rule covering the general case of x (i.e. x a variable) then, as per INPLA syntax there needs to be the final, catch-all case (`_`), this is set to `_ => r~ERROR`.
 
 Example files using only base FLIN:
 - unary_arithmetic.txt
@@ -145,9 +145,8 @@ Example files using only base FLIN:
 - generics.txt
 
 
-4.2 Implicit memory management
-------------------------------
-If the -imm flag is included, FLIN will add INPLA's in-built Eraser and Dupl agents as necessary.
+## 4.2) Implicit memory management
+If the `-imm` flag is included, FLIN will add INPLA's in-built Eraser and Dupl agents as necessary.
 Note that these are capitalised so do not follow our lower-case for functions syntax.
 
 If a file that requires -imm is compiled without it, it may still generate a result but INPLA will refuse to execute those rules.
@@ -158,22 +157,22 @@ Example files using implicit memory management:
 - imm.txt
 
 
-4.3 Nested pattern matching
+## 4.3_ Nested pattern matching
 ---------------------------
-If the -npm flag is included, FLIN will generate extra agents and rules to deal with nested pattern matching.
+If the `-npm` flag is included, FLIN will generate extra agents and rules to deal with nested pattern matching.
 
 As mentioned in the abstract (with further details in the cited paper), there are certain preconditions to this translation, namely that i) there is no LHS of a rule which contains another rule’s LHS but with different RHS and ii) no two LHSs differ only in their interfaces.
 FLIN does not check for this! So, again, the code produced may not run in INPLA.
 
 Example files using nested pattern matching:
-- last.txt (also requires -imm)
+- last.txt (also requires `-imm`)
 
 (Currently the full nested pattern matching algorithm is not implemented; only an example for lists).
 
 
-4.5 Multiple principal ports
+## 4.5) Multiple principal ports
 ----------------------------
-If the -mpp flag is present, FLIN will follow the translation described in the cited paper to generate extra agents and rules to deal with multiple principal ports.
+If the `-mpp` flag is present, FLIN will follow the translation described in the cited paper to generate extra agents and rules to deal with multiple principal ports.
 
 The first argument still must be a constructor (including a generic constructor) as interaction nets cannot handle parallel definitions and FLIN will fail to compile.
 
@@ -184,10 +183,10 @@ Example files using multiple principal ports:
 - por.txt - to show where this fails.
 
 
-4.6 Higher-order functions
+## 4.6) Higher-order functions
 --------------------------
-The -hof flag tells FLIN that one or more rules uses higher-order functions.
-These are then translated into INPLA rules utilising the special higher order constructor "i_lam" as described in the abstract.
+The `-hof` flag tells FLIN that one or more rules uses higher-order functions.
+These are then translated into INPLA rules utilising the special higher order constructor `i_lam` as described in the abstract.
 Similarly, terms using higher-order functions will be modified to nets including "i_app".
 
 As described in the abstract, these must be noted in rules with a leading "^" and are called by writing the function name followed by empty parentheses.
@@ -203,29 +202,29 @@ Example files using higher-order functions:
 - hofs.txt
 
 
-Some notes on FLIN
+## 5) Some notes on FLIN
 ------------------
 This is a demonstration of the viability of the approach, not a industry-ready compiler!
 In particular, not all errors are caught and those that are have messages designed for the author not the user.
 
-For example, swapping the first two lines of the example "even" and "odd" function definitions above ('Interaction mode' section), gives the mixture of internal and Haskell error messages:
+For example, swapping the first two lines of the example "even" and "odd" function definitions in Section 1, above, gives the mixture of internal and Haskell error messages:
+```text
     flin: funcNumOuts reaches end of LUT for odd
     CallStack (from HasCallStack):
         error, called at .\Trans.hs:308:25 in main:Trans
-
+```
 FLIN does not check that the output is valid INPLA; that job is left to INPLA.
-So, for example, terms which use variables multiple times without explicity duplicating or without the -imm flag will compile, but the resulting INPLA term will fail to execute.
+So, for example, terms which use variables multiple times without explicity duplicating or without the `-imm` flag will compile, but the resulting INPLA term will fail to execute.
 
-Beware!! (Again!) All the example files are written for interactive use.  For batch use, add a blank line and then a term to be compiled.
+**Beware!!** (Again!) All the example files are written for interactive use.  For batch use, add a blank line and then a term to be compiled.
 
 
-Some notes on INPLA
--------------------
+## 6) Some notes on INPLA
 Since FLIN requires INPLA to evaluate nets, it must be noted that the INPLA system itself is not a v1.0 either and may not always execute as expected.
 Exiting and re-starting fixes a lot of problems...
 
-Non-terminating nets will run on INPLA but will not show any output unless the -w flag is enabled.
+Non-terminating nets will run on INPLA but will not show any output unless the `-w` flag is enabled.
 See the INPLA documentation, section "Weak reduction strategy", for more information.
 An example program which produces a stream output is given in tm.txt.
 
-To use multi-threaded execution, files must be compiled using the command "make clean; make thread" and then the -t option.
+To use multi-threaded execution, files must be compiled using the command `make clean; make thread` and then the `-t` option.
