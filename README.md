@@ -1,4 +1,4 @@
-README -- FLIN to INPLA compiler
+# README -- FLIN to INPLA compiler
 --------------------------------
 
 (For simplicity the term "FLIN" is used to refer to both the language and the compiler below.)
@@ -207,6 +207,11 @@ Some notes on FLIN
 ------------------
 This is a demonstration of the viability of the approach, not a industry-ready compiler!
 In particular, not all errors are caught and those that are have messages designed for the author not the user.
+
+For example, swapping the first two lines of the example "even" and "odd" function definitions above ('Interaction mode' section), gives the mixture of internal and Haskell error messages:
+    flin: funcNumOuts reaches end of LUT for odd
+    CallStack (from HasCallStack):
+        error, called at .\Trans.hs:308:25 in main:Trans
 
 FLIN does not check that the output is valid INPLA; that job is left to INPLA.
 So, for example, terms which use variables multiple times without explicity duplicating or without the -imm flag will compile, but the resulting INPLA term will fail to execute.

@@ -1,0 +1,4 @@
+even(S(x)) = odd(x)
+even(Z)    = True
+odd(S(x))  = even(x)
+odd(Z)     = False

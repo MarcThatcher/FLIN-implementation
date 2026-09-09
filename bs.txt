@@ -1,0 +1,20 @@
+-- FLIN bubble sort, needs -mpp,-imm
+
+-- need to define bubble first so know how many outputs it gives to bsort
+-- bubble([],_x)   = M([x])
+
+bsort([])   = []
+bsort(x:xs) = bsort(bubble(x,xs))
+--bsort(M(x)) = x -- note this won't typecheck in haskell
+
+--bubble([],_x)   = M([x])
+--bubble(M(w),_x) = M(x:w)
+--bubble(y:ys,_x) = ite(lt(x,y),x,y,ys)
+
+--ite(True,x,y,ys)  = x:(bubble(ys,y))
+--ite(False,x,y,ys) = y:(bubble(ys,x))
+
+-- needs multi principal ports
+--lt (_a, 0)  = False
+--lt (0, _b)  = True
+--lt (_a, _b) = lt (pred a, pred b)
