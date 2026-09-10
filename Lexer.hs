@@ -100,7 +100,7 @@ upperIdent = do
   pure (TUpperID (x:xs))
 
 isIdentChar :: Char -> Bool
-isIdentChar c = isAlphaNum c || c == '_'
+isIdentChar c = isAlphaNum c || c == '_' || c == '\''
 
 symbol :: Char -> Parser Char
 symbol = char

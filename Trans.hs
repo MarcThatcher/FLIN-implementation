@@ -18,27 +18,29 @@ type Wire   = (Port,Port)
 type Net    = ([Agent],[Wire])
 type LUT    = [(String,Int)]         -- (func label, number outputs)
 
-
--- main takes a list of flags and a file name *.txt (order ignored)
--- if -bat is there, calls batch else calls interactive
--- both consider following flags:
--- -imm = implicit memory management (adds erase & duplication on RHS of rules)
--- -npm = nested pattern matching (implements Interaction Nets with NPM by Hassan & Sato)
--- -hof = deal with higher order functions
--- can have multiple flags
--- If -bat then file must have 0 or more rules followed by 1 or more blank lines and a term.
--- Comments are -- ; single line only
+{-
+ main takes a list of flags and a file name *.txt (order ignored).
+ If -bat is there, calls batch else calls interactive.
+ Both consider following flags:
+ -imm = implicit memory management (adds erase & duplication on RHS of rules)
+ -npm = nested pattern matching (implements Interaction Nets with NPM by Hassan & Sato)
+ -mpp = multiple principle ports (implements Macros for Interaction Nets by Sinot & Mackie)
+ -hof = deal with higher order functions
+ Can have multiple flags.
+ If -bat then file must have 0 or more rules followed by 1 or more blank lines and a term.
+ Comments are -- ; single line only, e.g. "id(Z) = Z -- the id function!" is invalid as the "--" is not on its own line. 
+-}
 main :: [String] -> IO ()
 main args =
     if "-bat" `elem` args
     then batch args
     else interactive args
 
--- flags recognised by main; anything else in args is the filename
+-- Define the flags recognised by main; anything else in args is assumed to be the filename
 allFlags :: [String]
 allFlags = ["-imm", "-npm", "-mpp", "-hof", "-bat"]
 
--- shared by interactive and batch: parse and expand rules, build LUT, translate rules to INPLA
+-- processRules is shared by interactive and batch: parse and expand rules, build LUT, translate rules to INPLA
 -- pipeline order: gen constrs -> mpp -> hofs -> imm
 processRules :: [String] -> [String] -> (LUT, String)
 processRules args ruleLines =
@@ -64,7 +66,7 @@ interactive :: [String] -> IO ()
 interactive args = do
     let filename = head (filter (`notElem` allFlags) args)
     inputFile <- readFile filename
-    let ruleLines = filter (not . null . words) $ filter (not . ("--" `isPrefixOf`)) (lines inputFile)
+    let ruleLines         = filter (not . null . words) $ filter (not . ("--" `isPrefixOf`)) (lines inputFile)
         (lut, transRules) = processRules args ruleLines
     putStrLn "Input file:"
     putStrLn inputFile
@@ -344,6 +346,7 @@ countOuts (FuncApp _ _) _   = 1
 -- fresh port names - appends _0 after alpha, increments digit after _, 9 -> _a
 fresh :: String -> String
 fresh s
+  | null s           = "!"  --dummy for 0 arity 
   | isAlpha (last s) = s ++ "_0"
   | last s == '9'    = init s ++ "_a"
   | otherwise        = init s ++ [chr (ord (last s) + 1)]
@@ -772,6 +775,7 @@ varsInTerm (Constr _ args)  = concatMap varsInTerm args
 varsInTerm (Func _ args)    = concatMap varsInTerm args
 varsInTerm (Par t1 t2)      = varsInTerm t1 ++ varsInTerm t2
 varsInTerm (Let t1 _ t2)    = varsInTerm t1 ++ varsInTerm t2
+varsInTerm (ListTerm ts)    = concat $ map varsInTerm ts
 varsInTerm _                = []
 
 -- Add !eraser for any LHS variables missing from RHS
@@ -807,7 +811,12 @@ substVar _   _   t               = t
 -- Add !duplicator lets for any variable appearing more than once on RHS
 -- Processes one variable at a time, nesting lets if needed
 addDuplicators :: Rule -> Rule
-addDuplicators (Rule lhs rhs) = Rule lhs (addDupsToTerm rhs)
+addDuplicators (Rule lhs rhs) =
+    let (Func _ args) = lhs
+    in 
+        if length (map isNatVarTerm args) == 1 -- weird INPLA thing, if one nat number variable, can use multiple times
+        then Rule lhs rhs
+        else Rule lhs (addDupsToTerm rhs)
 
 addDupsToTerm :: Term -> Term
 addDupsToTerm t =
@@ -926,7 +935,7 @@ makeGuardedNatRule litRules mVarRule lut =
                                 let (a', w') = trans t p ([], []) lut
                                 in (aAcc ++ a', wAcc ++ w'))
                            ([], [])
-                           (zip (flatPar rhs) rhsRoots)
+                           (zip (flatPar rhs) (rhsRoots ++ repeat "")) -- adds dummy (empty) port for nullary agent else lose in zip
             _       -> cleanNet $ trans rhs "r" ([], []) lut
         -- translate each lit rule to get its RHS
         transLit (Rule (Func f args) rhs) =
