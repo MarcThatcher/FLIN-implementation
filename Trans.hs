@@ -973,6 +973,7 @@ isNestedConstr _               = False
 isConstr :: Term -> Bool
 isConstr (Constr _ _)  = True
 isConstr (ListTerm []) = True
+--isConstr (Nat _)       = True
 isConstr _             = False
 
 testHasNestedPattern :: FilePath -> IO ()
