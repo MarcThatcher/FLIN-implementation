@@ -5,23 +5,56 @@
 e(*) = -
 
 -- duplication
-d(0)  = 0 | 0
-d(_x) = x | x
+d(*)  = * | *
+-- or do d(0) = 0|0 & d(_x) = x | x ??
 
--- addition
+-- addition. "y" in first definition is not "_y" as not relying on it being an natural number constructor
 add(0,y)   = y
 add(_x,_y) = succ(add(pred(x),y))
 
--- multiplication (implicit erasure & duplication)
+-- subtraction (monus): y-x
+sub(0,y)   = y
+sub(_x,_y) = sub(pred(x),pred(y))
+
+-- multiplication
 mult(0,y)   = 0 | e(y)
 mult(_x,_y) = let [y1,y2]~d(y) in add(mult(pred(x),y1),y2)
 
--- factorial (explicit duplication)
+-- division: y/x
+div(0,y) = ERROR | e(y)
+div(_x,_y) = ifz(sub(x,y),0, succ(div(sub(y,x),x)))
+
+ifz(0,isZ,isntZ)  = isZ | e(isntZ)
+ifz(_n,isZ,isntZ) = isntZ | e(isZ)
+
+-- factorial
 fact(0)  = 1
 fact(_x) = let [x1,x2]~d(x) in mult(x1,fact(pred(x2)))
 
--- ackermann function(explicit duplication)
+-- ackermann function
 ack(0,y)    = succ(y)
 ack(_x,_y)  = ackp(y,pred(x))
 ackp(0,x)   = ack(x,1)
 ackp(_y,_x) = let [x1,x2]~d(x) in ack(x1,ack(succ(x2),pred(y)))
+
+
+-- natural number equality
+isEq(0,y)   = isZ(y)
+isEq(_x,_y) = ifZ(y,False,isEq(pred(x),pred(y)))
+
+isZ(0)  = True
+isZ(_n) = False
+
+-- less than or equal to
+<copy!>
+
+-- greater than or equal to
+<work it out!>
+
+
+-- logical operators
+not(True)  = False
+not(False) = True
+
+or(True,y)  = True
+or(False,y) = y

@@ -1,0 +1,22 @@
+e(*) = -
+
+-- because "inpla" need to do like this ; note also that because _n must be a (nullary) constructor, no problem with second case
+d(0)   = 0 | 0
+d(_n)  = n | n
+
+dd(0) = 0|0|0
+dd(_n)  = n | n | n
+
+add(0,y)   = y
+add(_x,_y) = succ(add(pred(x),y))
+
+sub(0,y)   = y
+sub(_x,_y) = sub(pred(x),pred(y))
+
+mult(0,y)   = 0 | e(y)
+mult(_x,_y) = let [y1,y2]~d(y) in add(mult(pred(x),y1),y2)
+
+div(0,y) = ERROR | e(y)
+div(_x,_y) = let [y1,y2]~d(y) in (let [x1,x2]~d(x) in (let [x3,x4]~d(x2) in ifZ(sub(x1,y1),0, succ(div(sub(y2,x2),x3)))))
+ifZ(0,isZ,isntZ)  = isZ | e(isntZ)
+ifZ(_n,isZ,isntZ) = isntZ | e(isZ)

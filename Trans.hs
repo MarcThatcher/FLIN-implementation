@@ -77,6 +77,15 @@ interactive args = do
     putStrLn ""
     replLoop lut
 
+-- test for testing!! ****************************************************************
+test args = do
+    let filename = head (filter (`notElem` allFlags) args)
+    inputFile <- readFile filename
+    let ruleLines         = filter (not . null . words) $ filter (not . ("--" `isPrefixOf`)) (lines inputFile)
+        (lut, transRules) = processRules args ruleLines
+    putStrLn transRules
+
+
 batch :: [String] -> IO ()
 batch args = do
     let filename = head (filter (`notElem` allFlags) args)
@@ -909,6 +918,7 @@ groupNatRulesFor fName rules =
     in (litRules, varRule)
 
 --- Generate a single guarded INPLA rule from Nat literal rules + catch-all
+{-
 makeGuardedNatRule :: [Rule] -> Maybe Rule -> LUT -> String
 makeGuardedNatRule litRules mVarRule lut =
     let -- get variable name from NatVar rule, default to "x_0"
@@ -956,7 +966,68 @@ makeGuardedNatRule litRules mVarRule lut =
                          in " | _ => " ++ rhsStr
                      Nothing -> " | _ => r~ERROR"
     in header ++ guards ++ catchAll ++ ";"
+-}
 
+makeGuardedNatRule :: [Rule] -> Maybe Rule -> LUT -> String
+makeGuardedNatRule litRules mVarRule lut =
+    let
+        varName = case mVarRule of
+                    Just (Rule (Func _ args) _) -> head [v | NatVar v <- args]
+                    Nothing                     -> "x_0"
+
+        Rule (Func fName args) _ = case mVarRule of
+                                     Just r  -> r
+                                     Nothing -> head litRules
+
+        lhs        = transLHS (Func fName args) "r" lut
+        (agents,_) = lhs
+        (_, _, auxPorts) = head agents
+        outPorts = listPorts auxPorts
+        header   = fName ++ "(" ++ outPorts ++ ") >< (int " ++ varName ++ ")"
+
+        numOuts  = funcNumOuts fName lut
+        rhsRoots = take numOuts auxPorts
+
+        transRHS rhs = case rhs of
+            Par _ _ ->
+                foldl
+                    (\(aAcc, wAcc) (t, p) ->
+                        let (a', w') = trans t p ([], []) lut
+                        in (aAcc ++ a', wAcc ++ w'))
+                    ([], [])
+                    (zip (flatPar rhs) (rhsRoots ++ repeat ""))
+            _ ->
+                trans rhs "r" ([], []) lut
+
+        transLit (Rule (Func f args) rhs) =
+            let
+                n       = head [n | Nat n <- args]
+                rhsStr' = init (netToINPLA (transRHS rhs))
+            in
+                " | " ++ varName ++ "==" ++ show n ++ " => " ++ rhsStr'
+
+        guards = concatMap transLit litRules
+
+        catchAll =
+            case mVarRule of
+                Just (Rule (Func f ((NatVar var):vars)) rhs) ->
+                    let
+                        rhsNet = transRHS rhs
+                        rhsStr =
+                            if null (fst rhsNet)
+                            then
+                                intercalate ","
+                                    [b ++ "~" ++ var | (_, b) <- snd rhsNet]
+                            else
+                                init (netToINPLA rhsNet)
+                    in
+                        " | _ => " ++ rhsStr
+
+                Nothing ->
+                    " | _ => r~ERROR"
+
+    in
+        header ++ guards ++ catchAll ++ ";"
 
 -- nested pattern matching
 -- Check if a rule has nested constructors on the LHS

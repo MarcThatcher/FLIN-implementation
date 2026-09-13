@@ -21,7 +21,7 @@ bsort(M(x)) = x
 -- lte(x,y) returns True if x < or = y, else False
 lte(0, y)  = True
 lte(x, 0)  = False
-lte(_x,y)  = lte(pred(x),pred(y))
+lte(_x,_y)  = lte(pred(x),pred(y))
 
 --lte(0, y)  = True  | erase(y)
 --lte'(0,x)  = False | erase(x)
