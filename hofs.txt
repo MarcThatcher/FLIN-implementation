@@ -1,0 +1,11 @@
+-- new HOFs examples
+-- -hof and -imm required
+
+incr(n) = @(\x.add(x,1),n)
+
+--map([], f)    = []
+-- map(x:xs, )  = (app(x,f) : map(xs, f))
+
+--app(_x,^f)     = ^f(x)
+
+--comp(_x,^f,^g) = ^f(^g(x)) 

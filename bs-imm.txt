@@ -1,0 +1,28 @@
+-- FLIN bubble sort: *** IMM VERSION ***
+-- call as e.g. bsort([5,3,1])
+-- function order so always know number outputs when used in RHS
+-- need -imm flag
+
+erase(*) = -
+dup(0)   = 0|0
+dup(_n)  = n|n
+
+bubble([],_x)   = M([x])
+
+-- if/then/else
+ite(True,x,y,ys)  = x:(bubble(ys,y))
+ite(False,x,y,ys) = y:(bubble(ys,x))
+
+bsort([])   = []
+bsort(x:xs) = bsort(bubble(xs,x))
+bsort(M(x)) = x
+
+-- lte(x,y) returns True if x < or = y, else False
+lte(0, y)  = True
+lte'(0,x)  = False
+lte(_x,y)  = lte'(y,pred(x))
+lte'(_y,x) = lte(x,pred(y))
+
+bubble([],_x)  = M([x])
+bubble(M(w),x) = M(x:w)
+bubble(y:ys,x) = ite(lte(x,y),x,y,ys)

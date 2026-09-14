@@ -1,22 +1,58 @@
-e(*) = -
+-- e(rase) and d(uplicate) plus dd (double duplicate! - returns 3 copies)
+e(*)  = -
 
 -- because "inpla" need to do like this ; note also that because _n must be a (nullary) constructor, no problem with second case
 d(0)   = 0 | 0
 d(_n)  = n | n
 
-dd(0) = 0|0|0
-dd(_n)  = n | n | n
+dd(0)  = 0 | 0 | 0
+dd(_n) = n | n | n
 
+
+-- main functions
+-- addition. "y" in first definition is not "_y" as not relying on it being an natural number constructor
 add(0,y)   = y
 add(_x,_y) = succ(add(pred(x),y))
 
+
+-- subtraction (monus): y-x
 sub(0,y)   = y
 sub(_x,_y) = sub(pred(x),pred(y))
 
+
+-- multiplication
 mult(0,y)   = 0 | e(y)
 mult(_x,_y) = let [y1,y2]~d(y) in add(mult(pred(x),y1),y2)
 
-div(0,y) = ERROR | e(y)
-div(_x,_y) = let [y1,y2]~d(y) in (let [x1,x2]~d(x) in (let [x3,x4]~d(x2) in ifZ(sub(x1,y1),0, succ(div(sub(y2,x2),x3)))))
-ifZ(0,isZ,isntZ)  = isZ | e(isntZ)
-ifZ(_n,isZ,isntZ) = isntZ | e(isZ)
+
+-- division: y/x with x=0->ERROR
+div(0,y)   = ERROR | e(y)
+div(_x,_y) = countSubs(y,x,0)
+
+countSubs(0,x,n)  = n | e(x)
+countSubs(_y,x,n) = let [x1,x2]~d(x) in countSubs(sub(x1,y),x2,succ(n))
+
+
+-- factorial
+fact(0)  = 1
+fact(_x) = let [x1,x2]~d(x) in mult(x1,fact(pred(x2)))
+
+
+-- ackermann function
+ack(0,y)    = succ(y)
+ack(_x,_y)  = ackp(y,pred(x))
+ackp(0,x)   = ack(x,1)
+ackp(_y,_x) = let [x1,x2]~d(x) in ack(x1,ack(succ(x2),pred(y)))
+
+
+--(in)equality testing
+-- natural number equality
+isEq(0,y)   = isZ(y)
+isEq(_x,_y) = ifZ(y,False,isEq(pred(x),pred(y)))
+
+
+-- lte(x,y) returns True if x < or = y, else False
+lte(0, y)  = True  | erase(y)
+lte'(0,x)  = False | erase(x)
+lte(_x,y)  = lte'(y,pred(x))
+lte'(_y,x) = lte(x,pred(y))

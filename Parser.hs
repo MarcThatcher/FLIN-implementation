@@ -25,6 +25,7 @@ data Term
   | Empty
   | Constr ConstrName [Term]
   | Func FuncName [Term]
+  | Lambda Term Term
   | Let Term [VarName] Term
   | Par Term Term
   | Nat Int
@@ -78,8 +79,8 @@ tCloseSqParen = tok (\case TCloseSqParen -> Just (); _ -> Nothing) <?> "]"
 tStar :: Parser ()
 tStar = tok (\case TStar -> Just (); _ -> Nothing) <?> "*"
 
-tHat :: Parser ()
-tHat = tok (\case THat -> Just (); _ -> Nothing) <?> "^"
+-- tHat :: Parser ()
+-- tHat = tok (\case THat -> Just (); _ -> Nothing) <?> "^"
 
 listTerm :: Parser Term
 listTerm = do

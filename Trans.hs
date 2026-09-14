@@ -1016,18 +1016,32 @@ makeGuardedNatRule litRules mVarRule lut =
                         rhsStr =
                             if null (fst rhsNet)
                             then
-                                intercalate ","
-                                    [b ++ "~" ++ var | (_, b) <- snd rhsNet]
+                                intercalate "," [b ++ "~" ++ var | (_, b) <- snd rhsNet]           
                             else
                                 init (netToINPLA rhsNet)
                     in
                         " | _ => " ++ rhsStr
 
                 Nothing ->
-                    " | _ => r~ERROR"
+                    let 
+                        varsToErase = getVars litRules
+                        eraseList   = makeEraseRules varsToErase
+                    in " | _ => r~ERROR" ++ (if null eraseList then "" else ", "++eraseList)
 
     in
         header ++ guards ++ catchAll ++ ";"
+
+getVars :: [Rule] -> [VarName]
+getVars rules =
+    concatMap getRuleVars rules
+  where
+    getRuleVars (Rule (Func _ args) _) =
+        [v | Var v <- args] ++ [v | NatVar v <- args]
+
+makeEraseRules :: [VarName] -> String
+makeEraseRules vars =
+    intercalate "," ["Eraser~" ++ v | v <- vars]
+
 
 -- nested pattern matching
 -- Check if a rule has nested constructors on the LHS
