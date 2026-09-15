@@ -143,6 +143,19 @@ trans (Constr "i_lam" [port, Func fname _]) root (agents, wires) lut =
                 (fname, "a1"++root++fname, ["a2"++root++fname])],
      wires)
 
+trans (Lambda var func) root (agents, wires) lut =
+    let absFuncOut = fresh root
+        (absAgents, 
+         absWires) = trans func absFuncOut (agents, wires) lut -- this has input "var"
+        fFresh     = "f"++fresh absFuncOut
+        lambdaOut2 = "x"++fresh fFresh
+        lambdaHoC  = ("Lambda", root, [lambdaOut2, fFresh])    -- so need to amend "var" here
+        newWires   = [(lambdaOut2, var),          -- link second output of Lambda to input of func
+                      (fFresh, absFuncOut)        -- link Lambda input to func output 
+                     ] ++ absWires
+    in 
+        (lambdaHoC: (absAgents ++ agents), newWires ++ wires)
+
 trans (Constr constr args) root (agents, wires) lut =
   let numIns = length args
 
@@ -171,6 +184,7 @@ trans (Constr constr args) root (agents, wires) lut =
 -- special case !eraser is translated directly to INPLA's built-in Eraser agent
 trans (Func "!eraser" [Var v]) root (agents, wires) _ =
     (agents ++ [("Eraser", v, [])], wires)
+
 -- comment that need to always have () after function when 0-arity else INPLA cannot distinguish e()~1 (erase func) from e~1 (port e)
 trans (Func fName args) root net lut =
   let numOuts = funcNumOuts fName lut
@@ -253,6 +267,7 @@ trans (ListTerm terms) root (agents, wires) _ =
 -- function application: should not be called
 trans (FuncApp f args) root (agents, wires) _ =
     error "FuncApp should have been expanded before translation"
+
 
 -- Convert a term to its INPLA string representation for use in list literals
 termToINPLA :: Term -> String

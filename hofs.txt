@@ -1,7 +1,7 @@
 -- new HOFs examples
 -- -hof and -imm required
 
-incr(n) = @(\x.add(x,1),n)
+incr(n) = @(/x add(x,1),n)
 
 --map([], f)    = []
 -- map(x:xs, )  = (app(x,f) : map(xs, f))

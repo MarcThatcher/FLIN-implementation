@@ -25,7 +25,7 @@ data Term
   | Empty
   | Constr ConstrName [Term]
   | Func FuncName [Term]
-  | Lambda Term Term
+  | Lambda VarName Term
   | Let Term [VarName] Term
   | Par Term Term
   | Nat Int
@@ -79,8 +79,11 @@ tCloseSqParen = tok (\case TCloseSqParen -> Just (); _ -> Nothing) <?> "]"
 tStar :: Parser ()
 tStar = tok (\case TStar -> Just (); _ -> Nothing) <?> "*"
 
--- tHat :: Parser ()
--- tHat = tok (\case THat -> Just (); _ -> Nothing) <?> "^"
+tHat :: Parser ()
+tHat = tok (\case THat -> Just (); _ -> Nothing) <?> "^"
+
+tLam :: Parser ()
+tLam = tok (\case TLam -> Just (); _ -> Nothing) <?> "/"
 
 listTerm :: Parser Term
 listTerm = do
@@ -114,6 +117,13 @@ funcTerm = try $ do
   terms <- program `sepBy` tComma
   tClosePar
   pure (Func name terms)
+
+lambdaTerm :: Parser Term
+lambdaTerm = do
+  tLam
+  x <- lowerID
+  f <- funcTerm
+  pure (Lambda x f)
 
 varList :: Parser [VarName]
 varList = do
@@ -170,6 +180,7 @@ baseTerm =
   <|> natVarTerm
   <|> genConstrTerm
   <|> funcRefTerm
+  <|> lambdaTerm
   <|> listTerm
   <|> parenTerm
   <|> varTerm
