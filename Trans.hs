@@ -55,7 +55,7 @@ processRules args ruleLines =
                       $ expandAllGenConstrs
                       $ [r | Right r <- parsedRules]
         errors      = [e | Left e <- parsedRules]
-        builtinLUT  = [("succ", 1), ("pred", 1), ("!eraser", 0), ("!duplicator", 2), ("i_lam", 1), ("i_app", 1)]
+        builtinLUT  = [("succ", 1), ("pred", 1), ("!eraser", 0), ("!duplicator", 2), ("Lambda", 1), ("i_app", 1)]
         lut         = makeLUT rules builtinLUT
         transRules  = dupToDup (transRuleList rules lut npm)
     in if not (null errors)
@@ -569,9 +569,9 @@ transRuleList ruleList lut npm =
     builtins ++ guardedRules ++ dupToDup normalRules
     where
         rules = if npm then npmTransRuleList ruleList else ruleList
-        -- built in INPLA rules : succ&pred to work with natural number consturctors and i_app and i_lam for lambda calculus for HOFs
+        -- built in INPLA rules : succ&pred to work with natural number consturctors and i_app and Lambda (formerly i_lam) for lambda calculus for HOFs
         -- note pred min is 0
-        builtins = "succ(r) >< (int x) => r~(x+1);\npred(r)><(int x) | x>0 => r~x-1 | _ => r~0;\ni_app(r,v) >< i_lam(x,f) => r~f,v~x;\n"
+        builtins = "succ(r) >< (int x) => r~(x+1);\npred(r)><(int x) | x>0 => r~x-1 | _ => r~0;\n i_app(r,v) >< Lambda(x,f) => r~f,v~x;\n"
         -- find functions with nat literal rules
         natFuncs     = natLitFuncNames rules
         -- generate guarded rules for those functions
@@ -1228,7 +1228,7 @@ transAux _          = error "transAux: unsupported aux pattern"
 
 -- translate HOF term
 transHOFterm :: Term -> Term
-transHOFterm (Func name [])    = Constr "i_lam" [Var (name ++ "_pp"), Func name []]
+transHOFterm (Func name [])    = Constr "Lambda" [Var (name ++ "_pp"), Func name []]
 transHOFterm (Func name args)  = Func name (map transHOFterm args)
 transHOFterm (Constr c args)   = Constr c (map transHOFterm args)
 transHOFterm (Par t1 t2)       = Par (transHOFterm t1) (transHOFterm t2)

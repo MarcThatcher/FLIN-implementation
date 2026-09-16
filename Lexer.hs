@@ -33,7 +33,6 @@ data Token
     | TNat Int            -- natural number literal
     | TIntVar String      -- '_x' natural number variable
     | THat                -- '^' for HOFs ; deprecated
-    | TApp                -- '@' for HOFs
     | TLam                -- '\' (lambda) for HOFs
     deriving (Eq, Show)
 
@@ -57,7 +56,7 @@ lexToken = choice
   , symbol ':'  >> pure TCons
   , symbol '*'  >> pure TStar
   , symbol '^'  >> pure THat -- deprecated
-  , symbol '@' >> pure TApp
+  , symbol '@' >> pure (TLowerID "i_app")
   , symbol '/' >> pure TLam
   , natural
   , lowerIdent
