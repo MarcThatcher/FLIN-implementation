@@ -1,11 +1,14 @@
 -- new HOFs examples
--- -hof and -imm required
+-- -imm required
 
-incr(n) = @(/x add(x,1),n)
+add(0,y)   = y
+add(_x,_y) = succ(add(pred(x),y))
 
---map([], f)    = []
--- map(x:xs, )  = (app(x,f) : map(xs, f))
+incr(_n) = @(/x add(x,1),n)
 
+map([], f)    = []
+map(x:xs, f)  = (@(f,x) : map(xs,f))
+-- let [f1,f2] ~ !dup(f) in 
 --app(_x,^f)     = ^f(x)
 
 --comp(_x,^f,^g) = ^f(^g(x)) 

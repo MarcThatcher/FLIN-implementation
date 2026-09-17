@@ -47,6 +47,9 @@ ackp(_y,_x) = let [x1,x2]~d(x) in ack(x1,ack(succ(x2),pred(y)))
 
 --(in)equality testing
 -- natural number equality
+is(Z)   = True
+isZ(_n) = False
+
 isEq(0,y)   = isZ(y)
 isEq(_x,_y) = ifZ(y,False,isEq(pred(x),pred(y)))
 

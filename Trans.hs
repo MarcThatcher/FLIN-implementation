@@ -202,17 +202,20 @@ trans (Func fName args) root net lut =
       -- the function agent itself
       newAgent       = (fName, pp, outPorts ++ inPortsExPP)
 
-      -- now handle arguments, threading the accumulated net through each
-      -- translation (passing the same incoming net to every argument duplicates
-      -- it once per Var argument, which corrupts cleanNet's collapsing)
+      -- now handle arguments, threading the accumulated net through each translation
       (netAgents, netWires) = net
       (allAgents, allWires) =
         foldl
+          -- (\(as, ws) (arg, port) ->
+          --    let freshP       = port ++ "_0"
+          --        (as', ws')   = trans arg freshP (as, ws) lut
+          --        newWire      = (freshP, port)  -- connect arg result to function input
+          --    in  (as', newWire : ws'))
           (\(as, ws) (arg, port) ->
-             let freshP       = port ++ "_0"
-                 (as', ws')   = trans arg freshP (as, ws) lut
-                 newWire      = (freshP, port)  -- connect arg result to function input
-             in  (as', newWire : ws'))
+               let freshP       = port ++ "_0"
+                   (as', ws')   = trans arg freshP ([], []) lut
+                   newWire      = (freshP, port)
+               in  (as ++ as', newWire : ws ++ ws'))
           (newAgent : netAgents, netWires)
           (zip args (pp : inPortsExPP))
   in
