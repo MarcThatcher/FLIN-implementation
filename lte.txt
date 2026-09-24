@@ -1,18 +1,8 @@
--- 
-id(_n) = _n
+--erase(*) = -
 
-add(Z,n) = n
--- add(_m,_n) = succ(add(pred(m),n))
-
-fib(0)  = 0
-fib(1)  = 1
-fib(_n) = add(fib(pred(n)), fib(pred(pred(n))))
-
--- lte(0,_y)  = True
--- lte(_x,0)  = False
--- lte(_x,_y) = lte(pred(x),pred(y))
+lte(0, y)  = True 
+lte'(0,x)  = False
 
 
---lte(Z, y)    = True
---lte(S(x), Z) = False
---lte(S(x),S(y)) = lte(x,y)
+lte(_x,y)  = lte'(y,pred(x))
+lte'(_y,x) = lte(x,pred(y))

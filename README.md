@@ -42,8 +42,10 @@ Constructors start with capital letters and are otherwise the same.
 Variable (port) labels have same rules as functions.
 
 Comments are full lines only and start with `--`, e.g. 
- -- This is a comment.
- id(Z) = Z -- This will cause an error
+``` -- This is a comment.```
+is validm, but
+``` id(Z) = Z -- This will cause an error```
+will cause an error.
 
 Spaces and blank lines are ignored.
 In interactive mode, the file should only include comments, blank lines and function definitions.
