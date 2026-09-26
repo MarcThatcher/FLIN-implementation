@@ -1,7 +1,7 @@
 module Trans where
 
-import Data.Char (ord, chr, isAlpha, isAlphaNum, isLower, isDigit)
-import Data.List (nub, group, sort,isPrefixOf, partition, stripPrefix, intercalate, isSuffixOf)
+import Data.Char   (ord, chr, isAlpha, isAlphaNum, isLower, isDigit)
+import Data.List   (nub, group, sort,isPrefixOf, partition, stripPrefix, intercalate, isSuffixOf)
 import Parser
 import Text.Parsec (ParseError)
 import Debug.Trace
@@ -55,7 +55,10 @@ processRules args ruleLines =
                       $ expandAllGenConstrs
                       $ [r | Right r <- parsedRules]
         errors      = [e | Left e <- parsedRules]
-        builtinLUT  = [("succ", 1), ("pred", 1), ("!eraser", 0), ("!duplicator", 2), ("Lambda", 1), ("i_app", 1)]
+        builtinLUT  = [("succ", 1), ("pred", 1), 
+                       ("!eraser", 0), ("!duplicator", 2), 
+                       ("Lambda", 1), ("i_app", 1),
+                       ("Add",1), ("Sub",1), ("Mul",1), ("Div",1), ("Mod",1)]
         lut         = makeLUT rules builtinLUT
         transRules  = dupToDup (transRuleList rules lut npm)
     in if not (null errors)
@@ -1217,7 +1220,9 @@ transLHS term root lut =
         agent1                  = (fName, "p1", outPorts1 ++ (map transAux auxs1))
         agent2                  = case c of
                                     ListTerm []        -> ("[]", "p2", [])
-                                    Constr cName auxs2 -> (cName, "p2", map (\(Var s) -> s) auxs2)
+                                    Constr cName auxs2 -> (cName, "p2", map (\x -> case x of
+                                                            Var s    -> s
+                                                            NatVar s -> "int " ++ s) auxs2)
                                     Nat n              -> ("(int " ++ show n ++ ")", "p2", [])
                                     NatVar v           -> ("(int " ++ v ++ ")", "p2", [])
                                     _                  -> error "transLHS: unsupported constructor pattern"

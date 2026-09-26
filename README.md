@@ -37,6 +37,7 @@ For example the following compiles:
 because `even(Z)= True` tells the compiler that there is a single output.
 If the first two lines were swapped, it would not compile because the number of outputs of `even` based on `even(S(x)) = odd(x)` depends on the number of outputs of `odd(x)`, which is not yet known.
 Note that the reverse order for `odd` (above) works because the first instance is defined in terms of something whose number outputs is known.
+The order of definitions in the compiled program may not be the same as the input as FLIN first outputs in-built definitions (dealing with succ,pred and lambda-application), then rules including numerals, then others.
 
 Functions must start with lower-case letters and can include numbers but not other punctuation.
 (Sometimes other punctuation will be accepted but may clash with internally generated functions for certain flags, or not be accepted by INPLA.)

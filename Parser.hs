@@ -1,14 +1,16 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE FlexibleContexts #-}
+--{-# LANGUAGE FlexibleContexts #-}
 
 module Parser where
 
-import           Text.Parsec            (Parsec, parse, eof, (<|>), (<?>), sepBy, try, lookAhead, option, optionMaybe)
-import           Text.Parsec.Combinator (chainl1, chainr1)
-import           Text.Parsec.Prim       (tokenPrim)
-import           Text.Parsec.Error      (ParseError)
-import           Text.Parsec.Pos        (SourcePos)
-import           Lexer                  (Token(..), lexer)
+import Text.Parsec            (Parsec, parse, eof, (<|>), (<?>), 
+                               sepBy, sepBy1, try, lookAhead, option, optionMaybe)
+import Text.Parsec.Combinator (chainl1, chainr1)
+import Text.Parsec.Prim       (tokenPrim)
+import Text.Parsec.Error      (ParseError)
+import Text.Parsec.Pos        (SourcePos)
+import Lexer                  (Token(..), lexer)
+import Data.Char              (toUpper)
 
 ----------------------------------------------------------
 -- FLIN Term Parser
@@ -31,8 +33,9 @@ data Term
   | Nat Int
   | NatVar VarName
   | GenConstr [Term]
-  | ListTerm [Term]         -- syntactic sugar
-  | FuncApp FuncName [Term] -- for calling HOFs
+  | ListTerm [Term]             -- syntactic sugar
+  | FuncApp FuncName [Term]     -- for calling HOFs
+  | Conditional [(String, Term)]
   deriving (Eq,Show)
 
 ----------------------------------------------------------
@@ -85,6 +88,15 @@ tHat = tok (\case THat -> Just (); _ -> Nothing) <?> "^"
 tLam :: Parser ()
 tLam = tok (\case TLam -> Just (); _ -> Nothing) <?> "/"
 
+tQuestion :: Parser ()
+tQuestion = tok (\case TQuestion -> Just (); _ -> Nothing) <?> "?"
+
+tCaseArrow :: Parser ()
+tCaseArrow = tok (\case TCaseArrow -> Just (); _ -> Nothing) <?> "=>"
+
+tWildCard :: Parser ()
+tWildCard = tok (\case TWildCard -> Just (); _ -> Nothing) <?> "_"
+
 listTerm :: Parser Term
 listTerm = do
     tOpenSqParen
@@ -109,14 +121,28 @@ constrTerm = do
   tClosePar
   pure (Constr name terms)
 
+-- funcTerm :: Parser Term
+-- funcTerm = try $ do
+--   name <- lowerID
+--   lookAhead tOpenPar   -- check that next token is '(' without consuming it
+--   tOpenPar
+--   terms <- program `sepBy` tComma
+--   tClosePar
+--   pure (Func name terms)
 funcTerm :: Parser Term
 funcTerm = try $ do
+  isHash <- option False (True <$ tok (\case THash -> Just (); _ -> Nothing))
   name <- lowerID
-  lookAhead tOpenPar   -- check that next token is '(' without consuming it
+  lookAhead tOpenPar
   tOpenPar
   terms <- program `sepBy` tComma
   tClosePar
-  pure (Func name terms)
+  let funcName = if isHash
+                 then case name of
+                        []     -> name
+                        (c:cs) -> toUpper c : cs
+                 else name
+  pure (Func funcName terms)
 
 lambdaTerm :: Parser Term
 lambdaTerm = do
@@ -170,6 +196,38 @@ funcRefTerm = do
 parenTerm :: Parser Term
 parenTerm = tOpenPar *> program <* tClosePar
 
+condition :: Parser String
+condition =
+      comparison
+  <|> (tWildCard  >> pure "_")
+
+comparisonOp :: Parser String
+comparisonOp =
+      (tok (\case TEqualEqual -> Just "=="; _ -> Nothing))
+  <|> (tok (\case TNotEqual -> Just "!="; _ -> Nothing))
+  <|> (tok (\case TLess -> Just "<"; _ -> Nothing))
+  <|> (tok (\case TGreater -> Just ">"; _ -> Nothing))
+
+comparison :: Parser String
+comparison = do
+  x <- lowerID
+  op <- comparisonOp
+  y <- lowerID <|> (show <$> tok (\case TNat n -> Just n; _ -> Nothing))
+  pure (x ++ op ++ y)
+
+conditionalBranch :: Parser (String, Term)
+conditionalBranch = do
+  predicate <- condition
+  tCaseArrow
+  rhs <- program
+  pure (predicate, rhs)
+
+conditionalRhs :: Parser Term
+conditionalRhs = do
+  tQuestion
+  branches <- conditionalBranch `sepBy1` tQuestion
+  pure (Conditional branches)
+
 baseTerm :: Parser Term
 baseTerm =
       letTerm
@@ -218,13 +276,18 @@ data Rule = Rule Term Term deriving (Eq,Show)
 tEquals :: Parser ()
 tEquals = tok (\case TEquals -> Just (); _ -> Nothing) <?> "="
 
+-- ruleParser :: Parser Rule
+-- ruleParser = do
+--   lhs <- program
+--   tEquals
+--   rhs <- program
+--   pure (Rule lhs rhs)
 ruleParser :: Parser Rule
 ruleParser = do
   lhs <- program
   tEquals
-  rhs <- program
+  rhs <- try conditionalRhs <|> program
   pure (Rule lhs rhs)
-
 
 ----------------------------------------------------------
 -- API

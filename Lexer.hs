@@ -1,13 +1,9 @@
-{-# LANGUAGE FlexibleContexts #-}
+--{-# LANGUAGE FlexibleContexts #-}
 
-module Lexer
-  -- ( Token(..)
-  -- , lexer
-  -- ) 
-  where
+module Lexer where
 
-import Control.Monad (guard)
-import Data.Char (isAlphaNum, isLower, isUpper)
+import Control.Monad      (guard)
+import Data.Char          (isAlphaNum, isLower, isUpper)
 import Text.Parsec
 import Text.Parsec.String (Parser)
 
@@ -34,15 +30,56 @@ data Token
     | TIntVar String      -- '_x' natural number variable
     | THat                -- '^' for HOFs ; deprecated
     | TLam                -- '\' (lambda) for HOFs
+    | THash               -- '#' for built-in arithmetic and (in)equality functions
+    | TQuestion           -- '?'for conditionals
+    | TLess               -- '<'
+    | TGreater            -- '>'
+    | TEqualEqual         -- '=='
+    | TNotEqual           -- '!='
+    | TCaseArrow          -- '=>'
+    | TWildCard           -- '_' for conditionals
     deriving (Eq, Show)
 
 -- ----------------------------------------------------------------
 -- Lexer
 -- ----------------------------------------------------------------
 lexToken :: Parser Token
+-- lexToken = choice
+--   [ reservedLet
+--   , reservedIn
+--   , symbol '='  >> pure TEquals
+--   , symbol '~'  >> pure TTilde
+--   , symbol '('  >> pure TOpenParen
+--   , symbol ')'  >> pure TCloseParen
+--   , symbol '['  >> pure TOpenSqParen
+--   , symbol ']'  >> pure TCloseSqParen
+--   , symbol ','  >> pure TComma
+--   , symbol '|'  >> pure TPar
+--   , natVarIdent
+--   , wildcard
+--   , symbol '-'  >> pure TBlank
+--   , symbol ':'  >> pure TCons
+--   , symbol '*'  >> pure TStar
+--   , symbol '^'  >> pure THat -- deprecated
+--   , symbol '@' >> pure (TLowerID "i_app")
+--   , symbol '/' >> pure TLam
+--   , symbol '#' >> pure THash
+--   , symbol '?' >> pure TQuestion
+--   , try (string "==" >> pure TEqualEqual)
+--   , try (string "!=" >> pure TNotEqual)
+--   , try (string "=>" >> pure TCaseArrow)
+--   , symbol '<' >> pure TLess
+--   , symbol '>' >> pure TGreater
+--   , natural
+--   , lowerIdent
+--   , upperIdent
+--   ] <?> "token"
 lexToken = choice
   [ reservedLet
   , reservedIn
+  , try (string "==" >> pure TEqualEqual)
+  , try (string "!=" >> pure TNotEqual)
+  , try (string "=>" >> pure TCaseArrow)
   , symbol '='  >> pure TEquals
   , symbol '~'  >> pure TTilde
   , symbol '('  >> pure TOpenParen
@@ -52,12 +89,17 @@ lexToken = choice
   , symbol ','  >> pure TComma
   , symbol '|'  >> pure TPar
   , natVarIdent
+  , wildcard
   , symbol '-'  >> pure TBlank
   , symbol ':'  >> pure TCons
   , symbol '*'  >> pure TStar
-  , symbol '^'  >> pure THat -- deprecated
+  , symbol '^'  >> pure THat
   , symbol '@' >> pure (TLowerID "i_app")
   , symbol '/' >> pure TLam
+  , symbol '#' >> pure THash
+  , symbol '?' >> pure TQuestion
+  , symbol '<' >> pure TLess
+  , symbol '>' >> pure TGreater
   , natural
   , lowerIdent
   , upperIdent
@@ -87,6 +129,9 @@ natVarIdent = try $ do
   x <- satisfy isLower
   xs <- many (satisfy isIdentChar)
   pure (TIntVar (x:xs))
+
+wildcard :: Parser Token
+wildcard = symbol '_' >> pure TWildCard
 
 lowerIdent :: Parser Token
 lowerIdent = try $ do
