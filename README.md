@@ -1,5 +1,7 @@
 # README -- FLIN to INPLA compiler
 
+Bug reports: via the issues page on this repository, or to my email address which can be found at https://marcthatcher.github.io/contact.html.
+
 (For simplicity the term "FLIN" is used to refer to both the language and the compiler below.)
 
 Please note this implementation is for demonstration purposes only and should be used after reading the below and the abstract available from Termgraph 2026 (http://www.termgraph.org.uk/2026/) titled "A Programming Language for Interaction Nets".
