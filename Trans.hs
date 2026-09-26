@@ -1076,7 +1076,7 @@ isNestedConstr _               = False
 isConstr :: Term -> Bool
 isConstr (Constr _ _)  = True
 isConstr (ListTerm []) = True
---isConstr (Nat _)       = True
+isConstr (Nat _)       = True
 isConstr _             = False
 
 testHasNestedPattern :: FilePath -> IO ()
@@ -1226,6 +1226,7 @@ transLHS term root lut =
 -- Translate an aux port term to a port name
 transAux :: Term -> String
 transAux (Var s)    = s
+transAux (Nat n)    = show n
 transAux (NatVar v) = "int " ++ v
 transAux _          = error "transAux: unsupported aux pattern"
 

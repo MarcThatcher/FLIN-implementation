@@ -1,8 +1,11 @@
---erase(*) = -
+-- with -imm, -mpp
 
-lte(0, y)  = True 
-lte'(0,x)  = False
+--x<=y; this works!
+--lte(Z,y)       = True
+--lte(S(x),Z)    = False
+--lte(S(x),S(y)) = lte(x,y)
 
-
-lte(_x,y)  = lte'(y,pred(x))
-lte'(_y,x) = lte(x,pred(y))
+-- this doesnt work!
+lteN(0,y)   = True
+lteN(_x,0)  = False
+lteN(_x,_y) = lteN(x,y)
