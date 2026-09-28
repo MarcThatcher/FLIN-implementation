@@ -1,0 +1,1 @@
+bubble(_y:ys,_x) = ? x<y => x:bubble(ys,y) ? _ => y:bubble(ys,x)

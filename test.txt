@@ -1,0 +1,2 @@
+foo(0,y) = #sub(0,y)
+foo(_x,y)= #sub(_x,y)

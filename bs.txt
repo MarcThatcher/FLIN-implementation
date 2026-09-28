@@ -1,30 +1,13 @@
--- FLIN bubble sort: *** EXPLICIT VERSION ***
-
+-- FLIN bubble sort
 -- call as e.g. bsort([5,3,1])
-
--- function order so always know number outputs when used in RHS
-
-erase(*) = -
-dup(0)   = 0|0
-dup(_n)  = n|n
+-- note that function order is so always know number outputs when used in RHS
 
 bubble([],_x)   = M([x])
-
--- if/then/else
-ite(True,x,y,ys)  = x:(bubble(ys,y))
-ite(False,x,y,ys) = y:(bubble(ys,x))
 
 bsort([])   = []
 bsort(x:xs) = bsort(bubble(xs,x))
 bsort(M(x)) = x
 
--- lte(x,y) returns True if x < or = y, else False
-lte(0, y)  = True  | erase(y)
-lte'(0,x)  = False | erase(x)
-lte(_x,y)  = lte'(y,pred(x))
-lte'(_y,x) = lte(x,pred(y))
-
--- *** need to get this to work with -imm
-bubble([],_x)   = M([x])
-bubble(M(w),_x) = M(x:w)
-bubble(y:ys,_x) = let [x1,x2]~dup(x) in (let [y1,y2]~dup(y) in ite(lte(x1,y1),x2,y2,ys))
+bubble([],_x)    = M([x])
+bubble(M(w),_x)  = M(x:w)
+bubble(_y:ys,_x) = ? x<y => x:bubble(ys,y) ? _ => y:bubble(ys,x)

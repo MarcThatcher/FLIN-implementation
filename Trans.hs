@@ -372,6 +372,7 @@ countOuts (Let t1 _ t2) lut = countOuts t2 lut
 countOuts (Par t1 t2) lut   = (countOuts t1 lut) + (countOuts t2 lut)
 countOuts (ListTerm _) _    = 1
 countOuts (FuncApp _ _) _   = 1
+countOuts (Conditional ts) lut = maximum (0 : [countOuts t lut | (_, t) <- ts])
 
 -- fresh port names - appends _0 after alpha, increments digit after _, 9 -> _a
 fresh :: String -> String
@@ -485,6 +486,8 @@ replacePort pOld pNew (label, pp, aux) =
 -- Rules; needs LUT & npm flag allows for nesting
 transRule :: Rule -> LUT -> Bool -> String
 transRule rule lut npm =
+    if isConditional rule then transConditional rule lut
+    else
     let 
         Rule t1 t2 = rule
         root       = "r"
@@ -512,6 +515,31 @@ transRule rule lut npm =
     --    then applyT lhs t2 root lut npm
     --    else let lhsStr = transActivePair lhs
     --         in lhsStr ++ netToINPLA (renameNetPorts lhsStr rhs)
+
+isConditional :: Rule -> Bool
+isConditional (Rule _ (Conditional _)) = True
+isConditional _                        = False
+
+transConditional :: Rule -> LUT -> String
+transConditional rule lut =
+    let Rule lhs (Conditional rhs) = rule
+        root      = "r"
+        lhsTransA = transActivePair $ transLHS lhs root lut -- this has unwanted => at end
+        lhsTrans  = take (length lhsTransA - 3) lhsTransA   -- this removes it
+        rhsTrans  = transRHS rhs root lut
+    in 
+        lhsTrans ++ rhsTrans ++ ";"
+
+transRHS :: [(String,Term)] -> Port -> LUT -> String
+transRHS exprList root lut = 
+    -- pre: term is Conditional
+    if exprList == [] then [] 
+    else
+        let (predicate,expression):rest = exprList
+            transExpression             = init $ netToINPLA $ trans expression root ([],[]) lut
+        in 
+            (" | "++predicate++" => "++transExpression) ++ (transRHS rest root lut)
+
 
 applyT :: Net -> Term -> Port -> LUT -> Bool -> String
 applyT lhs t2 root lut npm =
@@ -597,9 +625,15 @@ transActivePair (agents, wire) =
       a2auxsList       = listPorts a2auxs
       a1auxsListString = "(" ++ a1auxsList ++ ")"
       a2nameStr        = if a2name == "!Cons" then "" else a2name
+      -- a2auxsListString = if null a2auxsList then ""
+      --                       else if a2name == "!Cons" then "(" ++ head a2auxs ++ ":" ++ last a2auxs ++ ")"
+      --                            else "(" ++ a2auxsList ++ ")"
       a2auxsListString = if null a2auxsList then ""
-                            else if a2name == "!Cons" then "(" ++ head a2auxs ++ ":" ++ last a2auxs ++ ")"
-                                 else "(" ++ a2auxsList ++ ")"
+                   else if a2name == "!Cons" then
+                     if "int " `isPrefixOf` head a2auxs
+                     then "(" ++ head a2auxs ++ "):" ++ last a2auxs
+                     else "(" ++ head a2auxs ++ ":" ++ last a2auxs ++ ")"
+                   else "(" ++ a2auxsList ++ ")"
   in
     a1name ++ a1auxsListString ++ " >< " ++ a2nameStr ++ a2auxsListString ++ " => "
 
