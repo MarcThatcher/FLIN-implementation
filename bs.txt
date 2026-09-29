@@ -2,12 +2,10 @@
 -- call as e.g. bsort([5,3,1])
 -- note that function order is so always know number outputs when used in RHS
 
-bubble([],_x)   = M([x])
-
-bsort([])   = []
-bsort(x:xs) = bsort(bubble(xs,x))
-bsort(M(x)) = x
-
-bubble([],_x)    = M([x])
-bubble(M(w),_x)  = M(x:w)
+bubble([],x)     = M([x])
+bubble(M(xs),x)  = M(x:xs)
 bubble(_y:ys,_x) = ? x<y => x:bubble(ys,y) ? _ => y:bubble(ys,x)
+
+bsort([])    = []
+bsort(x:xs)  = bsort(bubble(xs,x))
+bsort(M(xs)) = xs
