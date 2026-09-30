@@ -188,9 +188,10 @@ trans (Constr constr args) root (agents, wires) lut =
 trans (Func "!eraser" [Var v]) root (agents, wires) _ =
     (agents ++ [("Eraser", v, [])], wires)
 
--- comment that need to always have () after function when 0-arity else INPLA cannot distinguish e()~1 (erase func) from e~1 (port e)
+-- need to always have () after function when 0-arity else INPLA cannot distinguish e()~1 (erase func) from e~1 (port e)
 trans (Func fName args) root net lut =
-  let numOuts = funcNumOuts fName lut
+  let (Func _ args') = swapArithmetic (Func fName args) -- to deal with INPLA arithmetic ordering (see swapArithmetic)
+      numOuts = funcNumOuts fName lut
       pp      = fresh root
 
       -- output ports: first is root, rest are root ++ fresh iterated
@@ -220,7 +221,7 @@ trans (Func fName args) root net lut =
                    newWire      = (freshP, port)
                in  (as ++ as', newWire : ws ++ ws'))
           (newAgent : netAgents, netWires)
-          (zip args (pp : inPortsExPP))
+          (zip args' (pp : inPortsExPP))
   in
       (allAgents, allWires)
 
@@ -273,6 +274,17 @@ trans (ListTerm terms) root (agents, wires) _ =
 -- function application: should not be called
 trans (FuncApp f args) root (agents, wires) _ =
     error "FuncApp should have been expanded before translation"
+
+
+-- INPLA arithmetic is of the form Sub(r,y)~x -> r=y-x, so we need to swap order of inputs to arithmetic functions
+swapArithmetic :: Term -> Term
+swapArithmetic (Func f args)
+  | f `elem` ["Add", "Sub", "Mul", "Div", "Mod"] =
+      case args of
+        x:y:rest -> Func f (y:x:rest)
+        _        -> Func f args
+  | otherwise = Func f args
+swapArithmetic t = t
 
 
 -- Convert a term to its INPLA string representation for use in list literals
@@ -393,7 +405,7 @@ intermediatePorts :: [Wire] -> [Port]
 intermediatePorts ws =
     let ports = concatMap (\(a,b) -> [a,b]) ws
         counts = map (\g -> (head g, length g)) . group . sort $ ports
-    in [p | (p,n) <- counts, n > 1, not ("_hat" `isSuffixOf` p)]
+    in [p | (p,n) <- counts, n > 1, not ("_" `isPrefixOf` p)]
 
 -- Collapse a single intermediate port
 collapseIntermediate :: [Wire] -> Port -> [Wire]

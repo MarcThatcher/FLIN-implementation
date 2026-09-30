@@ -44,36 +44,6 @@ data Token
 -- Lexer
 -- ----------------------------------------------------------------
 lexToken :: Parser Token
--- lexToken = choice
---   [ reservedLet
---   , reservedIn
---   , symbol '='  >> pure TEquals
---   , symbol '~'  >> pure TTilde
---   , symbol '('  >> pure TOpenParen
---   , symbol ')'  >> pure TCloseParen
---   , symbol '['  >> pure TOpenSqParen
---   , symbol ']'  >> pure TCloseSqParen
---   , symbol ','  >> pure TComma
---   , symbol '|'  >> pure TPar
---   , natVarIdent
---   , wildcard
---   , symbol '-'  >> pure TBlank
---   , symbol ':'  >> pure TCons
---   , symbol '*'  >> pure TStar
---   , symbol '^'  >> pure THat -- deprecated
---   , symbol '@' >> pure (TLowerID "i_app")
---   , symbol '/' >> pure TLam
---   , symbol '#' >> pure THash
---   , symbol '?' >> pure TQuestion
---   , try (string "==" >> pure TEqualEqual)
---   , try (string "!=" >> pure TNotEqual)
---   , try (string "=>" >> pure TCaseArrow)
---   , symbol '<' >> pure TLess
---   , symbol '>' >> pure TGreater
---   , natural
---   , lowerIdent
---   , upperIdent
---   ] <?> "token"
 lexToken = choice
   [ reservedLet
   , reservedIn
@@ -125,8 +95,8 @@ natural = TNat . read <$> many1 digit
 
 natVarIdent :: Parser Token
 natVarIdent = try $ do
-  _ <- symbol '_'
-  x <- satisfy isLower
+  _  <- symbol '_'
+  x  <- satisfy isLower
   xs <- many (satisfy isIdentChar)
   pure (TIntVar (x:xs))
 
