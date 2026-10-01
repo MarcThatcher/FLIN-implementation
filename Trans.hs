@@ -55,7 +55,7 @@ processRules args ruleLines =
                       $ expandAllGenConstrs
                       $ [r | Right r <- parsedRules]
         errors      = [e | Left e <- parsedRules]
-        builtinLUT  = [("succ", 1), ("pred", 1), 
+        builtinLUT  = [ -- ("succ", 1), ("pred", 1), 
                        ("!eraser", 0), ("!duplicator", 2), 
                        ("Lambda", 1), ("i_app", 1),
                        ("Add",1), ("Sub",1), ("Mul",1), ("Div",1), ("Mod",1)]
@@ -227,9 +227,7 @@ trans (Func fName args) root net lut =
 
 -- natural number variables
 trans (NatVar v) root (agents, wires) _ =
-    -- (agents ++ [("(int " ++ v ++ ")", root, [])], wires)
-    -- (agents ++ [(v, root, [])], wires)
-       (agents , wires++[(root,v)])
+       (agents , wires++[(root,'$':v)])
 
 -- natural number literals: on RHS become n port for pattern matching
 trans (Nat n) root (agents, wires) _ =
@@ -278,13 +276,14 @@ trans (FuncApp f args) root (agents, wires) _ =
 
 -- INPLA arithmetic is of the form Sub(r,y)~x -> r=y-x, so we need to swap order of inputs to arithmetic functions
 swapArithmetic :: Term -> Term
-swapArithmetic (Func f args)
-  | f `elem` ["Add", "Sub", "Mul", "Div", "Mod"] =
-      case args of
-        x:y:rest -> Func f (y:x:rest)
-        _        -> Func f args
-  | otherwise = Func f args
-swapArithmetic t = t
+swapArithmetic = id
+-- swapArithmetic (Func f args)
+--   | f `elem` ["Add", "Sub", "Mul", "Div", "Mod"] =
+--       case args of
+--         x:y:rest -> Func f (y:x:rest)
+--         _        -> Func f args
+--   | otherwise = Func f args
+-- swapArithmetic t = t
 
 
 -- Convert a term to its INPLA string representation for use in list literals
@@ -399,13 +398,13 @@ cleanNet :: Net -> Net
 cleanNet (agents, wires) = 
     let intermediates     = nub $ intermediatePorts wires
         collapsedWires    = nub $ collapseChains wires intermediates
-    in collapseWiresToPorts (updateAgentsWithWires agents collapsedWires)
+    in (collapseWiresToPorts (updateAgentsWithWires agents collapsedWires))
 
 intermediatePorts :: [Wire] -> [Port]
 intermediatePorts ws =
     let ports = concatMap (\(a,b) -> [a,b]) ws
         counts = map (\g -> (head g, length g)) . group . sort $ ports
-    in [p | (p,n) <- counts, n > 1, not ("_" `isPrefixOf` p)]
+    in [p | (p,n) <- counts, n > 1, not ("$" `isPrefixOf` p)]
 
 -- Collapse a single intermediate port
 collapseIntermediate :: [Wire] -> Port -> [Wire]
@@ -419,6 +418,7 @@ collapseIntermediate wires ip =
          _        -> []         -- ignore other cases for now
          
 -- Collapse all intermediate ports
+collapseChains :: [Wire] -> [Port] -> [Wire]
 collapseChains wires intermediates =
     let isIntermediate p = p `elem` intermediates
 
@@ -441,6 +441,10 @@ collapseChains wires intermediates =
                        | (a,b) <- wires
                        , not (isIntermediate a && isIntermediate b)]
     in nub [(x,y) | (x,y) <- newWires, x /= y]
+
+stripLeadingUnderscore :: String -> String
+stripLeadingUnderscore ('_':xs) = xs
+stripLeadingUnderscore xs       = xs
 
 -- if a~b and a appears in port, replace a with b
 collapseWiresToPorts :: Net -> Net
@@ -520,7 +524,7 @@ transRule rule lut npm =
                     in rhsNet
                 Let _ _ _ -> cleanUpLetOutputs lhs (cleanNet $ trans t2 root ([], []) lut) lut
                 _         -> let (agents,wires) = trans t2 root ([], []) lut
-                             in cleanNet (nub agents,nub wires) 
+                             in cleanNet (nub agents,nub wires)
        in let lhsStr = transActivePair lhs
           in lhsStr ++ netToINPLA (renameNetPorts lhsStr rhs)
     -- in if npm && numAgents > 2
@@ -617,9 +621,9 @@ transRuleList ruleList lut npm =
         rules = if npm then npmTransRuleList ruleList else ruleList
         -- built in INPLA rules : succ&pred to work with natural number consturctors and i_app and Lambda (formerly i_lam) for lambda calculus for HOFs
         -- note pred min is 0
-        builtins = "succ(r) >< (int x) => r~(x+1);\npred(r)><(int x) | x>0 => r~x-1 | _ => r~0;\n i_app(r,v) >< Lambda(x,f) => r~f,v~x;\n"
+        builtins = " i_app(r,v) >< Lambda(x,f) => r~f,v~x;\n" --succ(r) >< (int x) => r~(x+1);\npred(r)><(int x) | x>0 => r~x-1 | _ => r~0;\n
         -- find functions with nat literal rules
-        natFuncs     = natLitFuncNames rules
+        natFuncs = natLitFuncNames rules
         -- generate guarded rules for those functions
         guardedRules = concatMap (\f ->
             let (litRules, mVarRule) = groupNatRulesFor f rules
@@ -653,7 +657,7 @@ flatPar :: Term -> [Term]
 flatPar (Par t1 t2) = flatPar t1 ++ flatPar t2
 flatPar t           = [t]
 
---- **** 
+
 tr :: LUT -> String -> Either ParseError Net
 tr lut term =
     let parsedTerm = parseTerm term
@@ -692,11 +696,6 @@ unconnectedPortsAgents (agents, wires) = uniqueOnly $ concatMap portList agents
 
 portList :: Agent -> [Port]
 portList (symbol,pp,auxList) = pp:auxList
-
--- notInLHS :: Net -> [String] -> [String]
--- notInLHS (lhsAgents, lhsWires) ports =
---   let lhsPorts = concatMap (\(_,pp,aux) -> pp:aux) lhsAgents ++ concatMap (\(a,b) -> [a,b]) lhsWires
---   in filter (`notElem` lhsPorts) ports
 
 notInLHS :: Net -> [String] -> [String]
 notInLHS (lhsAgents, lhsWires) ports =
@@ -1051,7 +1050,6 @@ makeGuardedNatRule litRules mVarRule lut =
         (_, _, auxPorts) = head agents
         outPorts = listPorts auxPorts
         header   = fName ++ "(" ++ outPorts ++ ") >< (int " ++ varName ++ ")"
-
         numOuts  = funcNumOuts fName lut
         rhsRoots = take numOuts auxPorts
 
@@ -1069,7 +1067,7 @@ makeGuardedNatRule litRules mVarRule lut =
         transLit (Rule (Func f args) rhs) =
             let
                 n       = head [n | Nat n <- args]
-                rhsStr' = init (netToINPLA (transRHS rhs))
+                rhsStr' = init (netToINPLA (transRHS rhs)) -- local transRHS!
             in
                 " | " ++ varName ++ "==" ++ show n ++ " => " ++ rhsStr'
 
@@ -1079,13 +1077,13 @@ makeGuardedNatRule litRules mVarRule lut =
             case mVarRule of
                 Just (Rule (Func f ((NatVar var):vars)) rhs) ->
                     let
-                        rhsNet = transRHS rhs
+                        rhsNet = transRHS rhs -- local transRHS!
                         rhsStr =
                             if null (fst rhsNet)
                             then
                                 intercalate "," [b ++ "~" ++ var | (_, b) <- snd rhsNet]           
                             else
-                                init (netToINPLA rhsNet)
+                                init (filter (/= '$') $ (netToINPLA rhsNet))
                     in
                         " | _ => " ++ rhsStr
 
@@ -1096,7 +1094,7 @@ makeGuardedNatRule litRules mVarRule lut =
                     in " | _ => r~ERROR" ++ (if null eraseList then "" else ", "++eraseList)
 
     in
-        header ++ guards ++ catchAll ++ ";"
+        filter (/= '$') $ (header ++ guards ++ catchAll ++ ";")
 
 getVars :: [Rule] -> [VarName]
 getVars rules =

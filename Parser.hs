@@ -121,14 +121,6 @@ constrTerm = do
   tClosePar
   pure (Constr name terms)
 
--- funcTerm :: Parser Term
--- funcTerm = try $ do
---   name <- lowerID
---   lookAhead tOpenPar   -- check that next token is '(' without consuming it
---   tOpenPar
---   terms <- program `sepBy` tComma
---   tClosePar
---   pure (Func name terms)
 funcTerm :: Parser Term
 funcTerm = try $ do
   isHash <- option False (True <$ tok (\case THash -> Just (); _ -> Nothing))

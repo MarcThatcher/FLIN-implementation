@@ -1,0 +1,2 @@
+safediv(0,y)  = Error
+safediv(_x,y) = #div(_x,y)
