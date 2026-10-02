@@ -1,0 +1,15 @@
+-- quicksort; call as qsort([5,4,3,2,1])
+
+-- append(l1,l2) returns l2++l1
+append([],ys)   = ys
+append(x:xs,ys) = x:append(xs,ys)
+
+-- part defined before qsort because qsort references it
+part([], _x)    = [] | []
+part(_y:ys, _x) = ? y<x => let [smaller,larger] ~ part(ys,x) in y:smaller | larger ? _ => let [smaller,larger] ~ part(ys,x) in smaller | y:larger 
+
+qsort([])    = []
+qsort(_x:xs) = let [smaller, larger] ~ part(xs,x) in append(qsort(smaller), x:qsort(larger))
+
+
+

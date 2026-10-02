@@ -269,6 +269,11 @@ trans (ListTerm terms) root (agents, wires) _ =
     let listStr = "[" ++ intercalate "," (map termToINPLA terms) ++ "]"
     in (agents ++ [(listStr, root, [])], wires)
 
+-- Conditional
+trans (Conditional condExprList) root (agents,wires) lut =
+    -- ([("Cond"," ",[])],[])
+    error "trans cannot return INPLA conditional"
+
 -- function application: should not be called
 trans (FuncApp f args) root (agents, wires) _ =
     error "FuncApp should have been expanded before translation"
@@ -335,6 +340,7 @@ agentStr symbol auxPorts
     | symbol      == "!Cons"      = "(" ++ head auxPorts ++ ":" ++ last auxPorts ++ ")"
     | "(int " `isPrefixOf` symbol = init (drop 5 symbol)
     | all isDigit symbol          = symbol
+    | (head symbol == '-' && all isDigit (tail symbol)) = symbol
     | otherwise                   = symbol ++ "(" ++ listPorts auxPorts ++ ")"
 
 listPorts :: [Port] -> String
@@ -544,7 +550,7 @@ transConditional rule lut =
         lhsTrans  = take (length lhsTransA - 3) lhsTransA   -- this removes it
         rhsTrans  = transRHS rhs root lut
     in 
-        lhsTrans ++ rhsTrans ++ ";"
+        fixDanglingPorts lhsTrans (splitExpr rhsTrans)
 
 transRHS :: [(String,Term)] -> Port -> LUT -> String
 transRHS exprList root lut = 
@@ -554,8 +560,88 @@ transRHS exprList root lut =
         let (predicate,expression):rest = exprList
             transExpression             = init $ netToINPLA $ trans expression root ([],[]) lut
         in 
-            (" | "++predicate++" => "++transExpression) ++ (transRHS rest root lut)
+            (" | " ++ predicate ++ " => " ++ transExpression) ++ (transRHS rest root lut)
 
+splitArgs :: Char -> String -> [String]
+splitArgs _ "" = []
+splitArgs sep xs =
+    let (a, rest) = break (== sep) xs
+    in a : case rest of
+             []     -> []
+             (_:rs) -> splitArgs sep rs
+
+splitExpr :: String -> [String]
+splitExpr s =
+    map (dropWhile (== ' ') . reverse . dropWhile (== ' ') . reverse)
+        (splitArgs '|' (dropWhile (== ' ') s))
+
+getInterface :: String -> [String]
+getInterface s =
+    map (stripSpaces . removeParens) (splitArgs ',' first ++ splitArgs ':' second)
+  where
+    first  = takeWhile (/= ')') . tail . dropWhile (/= '(') $ s
+    second = dropWhile (`elem` " ") . drop 3 . dropWhile (/= '>') $ s
+    removeParens = filter (`notElem` "()")
+    stripSpaces  = reverse . dropWhile (== ' ') . reverse . dropWhile (== ' ')
+
+afterArrow :: String -> String
+afterArrow s = dropWhile (== ' ') $ drop 1 (dropWhile (/= '>') s)
+
+removeFunctionName :: String -> String
+removeFunctionName s =
+    case break (== '(') s of
+        (_, [])     -> s
+        (_, _:rest) -> rest
+
+removeBrackets :: String -> String
+removeBrackets = filter (`notElem` "()")   
+
+replaceColon :: String -> String
+replaceColon = map (\c -> if c == ':' then ',' else c)
+
+replaceTilde :: String -> String
+replaceTilde = map (\c -> if c == '~' then ',' else c)
+
+commaSplit :: String -> [String]
+commaSplit = splitArgs ','
+
+getPorts :: String -> [String]
+getPorts = commaSplit . replaceTilde . replaceColon . removeBrackets . removeFunctionName . afterArrow
+
+findLoosePorts :: [String] -> [String] -> [(String, String)]
+findLoosePorts interfacePorts rhsPorts =
+    zip list1 list2
+  where
+    list2 = filter (\x -> x `notElem` interface && count x rhsPorts == 1) rhsPorts
+    list1 = filter (\x -> x `notElem` rhsInterface && count x interfacePorts == 1) interfacePorts
+    interface    = map removeInt interfacePorts
+    rhsInterface = map removeInt rhsPorts
+    count x = length . filter (== x)
+    removeInt s =
+        case words s of
+            ("int":x:_) -> x
+            _           -> s
+
+replacePairs :: String -> [(String, String)] -> String
+-- given a loose port and the interface port, replace loose with interface (note ordering swap)
+replacePairs s pairs =
+    foldl (\str (e1, e2) -> replace e2 e1 str) s pairs
+  where
+    replace old new [] = []
+    replace old new str
+        | old `isPrefixOf` str = new ++ replace old new (drop (length old) str)
+        | otherwise            = head str : replace old new (tail str)
+
+replaceDanglingPorts :: String -> [String] -> [String]
+replaceDanglingPorts lhs rhsList =
+    filter (/= "") (map replaceOne rhsList)
+  where
+    replaceOne rhs =
+        replacePairs rhs (findLoosePorts (getInterface lhs) (getPorts rhs))
+
+fixDanglingPorts :: String -> [String] -> String
+fixDanglingPorts lhs rhsList =
+    lhs ++ " | " ++ intercalate " | " (replaceDanglingPorts lhs rhsList) ++ ";"
 
 applyT :: Net -> Term -> Port -> LUT -> Bool -> String
 applyT lhs t2 root lut npm =
@@ -1060,7 +1146,7 @@ makeGuardedNatRule litRules mVarRule lut =
                         let (a', w') = trans t p ([], []) lut
                         in (aAcc ++ a', wAcc ++ w'))
                     ([], [])
-                    (zip (flatPar rhs) (rhsRoots ++ repeat ""))
+                    (zip (flatPar rhs) (rhsRoots ++ repeat ""))     
             _ ->
                 trans rhs "r" ([], []) lut
 
@@ -1076,25 +1162,42 @@ makeGuardedNatRule litRules mVarRule lut =
         catchAll =
             case mVarRule of
                 Just (Rule (Func f ((NatVar var):vars)) rhs) ->
-                    let
-                        rhsNet = transRHS rhs -- local transRHS!
-                        rhsStr =
-                            if null (fst rhsNet)
-                            then
-                                intercalate "," [b ++ "~" ++ var | (_, b) <- snd rhsNet]           
-                            else
-                                init (filter (/= '$') $ (netToINPLA rhsNet))
-                    in
-                        " | _ => " ++ rhsStr
+                    if isConditionalExpr rhs then 
+                        transConditionalExpr rhs lut
+                    else
+                        let
+                            rhsNet = transRHS rhs -- local transRHS!
+                            rhsStr =
+                                if null (fst rhsNet)
+                                then
+                                    intercalate "," [b ++ "~" ++ var | (_, b) <- snd rhsNet]           
+                                else
+                                    init (filter (/= '$') $ (netToINPLA rhsNet))
+                        in
+                            " | _ => " ++ rhsStr
 
                 Nothing ->
                     let 
                         varsToErase = getVars litRules
                         eraseList   = makeEraseRules varsToErase
-                    in " | _ => r~ERROR" ++ (if null eraseList then "" else ", "++eraseList)
+                    in " | _ => r~ERROR" ++ (if null eraseList then "" else ", "++ eraseList)
 
     in
         filter (/= '$') $ (header ++ guards ++ catchAll ++ ";")
+
+isConditionalExpr :: Term -> Bool
+isConditionalExpr (Conditional _) = True
+isConditionalExpr _               = False
+
+transConditionalExpr :: Term -> LUT -> String
+transConditionalExpr (Conditional (expr:rest)) lut = tCE (expr:rest) lut
+
+tCE :: [(String,Term)] -> LUT -> String
+tCE [] _            = []
+tCE (expr:rest) lut = 
+    let (cond,term) = expr 
+    in
+        " | " ++ cond ++ " => " ++ (init $ netToINPLA $ trans term "r" ([],[]) lut) ++ (tCE rest lut)
 
 getVars :: [Rule] -> [VarName]
 getVars rules =
@@ -1295,7 +1398,7 @@ transHOFterm t                 = t
 -- Scan a Term for constructors, Nats, or ListTerms in non-first positions
 -- (including nested within the first argument's arguments)
 npmTransRuleList :: [Rule] -> [Rule]
-npmTransRuleList = concatMap npmTrans
+npmTransRuleList = id -- concatMap npmTrans
 
 npmTrans :: Rule -> [Rule]
 npmTrans rule =
@@ -1304,11 +1407,6 @@ npmTrans rule =
         allVars (Constr c cArgs) = all isVar cArgs
         isVar (Var _) = True
         isVar _       = False
-        -- replaceNonVars (Constr _ cArgs) n =
-        --     let replace arg i = case arg of
-        --             Var _ -> arg
-        --             _     -> Var ("var_" ++ show i)
-        --     in Constr "!Cons" (zipWith replace cArgs [n..])
         replaceNonVars (Constr c cArgs) n =
             let replace arg i = case arg of
                     Var _ -> arg

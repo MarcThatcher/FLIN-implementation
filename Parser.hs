@@ -169,6 +169,12 @@ parOp = do
 natTerm :: Parser Term
 natTerm = tok (\case TNat n -> Just (Nat n); _ -> Nothing) <?> "natural number"
 
+negativeNatTerm :: Parser Term
+negativeNatTerm = do
+    tok (\case TBlank -> Just (); _ -> Nothing)
+    n <- tok (\case TNat n -> Just n; _ -> Nothing)
+    pure (Nat (-n))
+
 natVarTerm :: Parser Term
 natVarTerm = tok (\case TIntVar s -> Just (NatVar s); _ -> Nothing) <?> "nat variable"
 
@@ -225,6 +231,7 @@ baseTerm =
       letTerm
   <|> constrTerm
   <|> funcTerm
+  <|> negativeNatTerm
   <|> emptyTerm
   <|> natTerm
   <|> natVarTerm
@@ -268,12 +275,6 @@ data Rule = Rule Term Term deriving (Eq,Show)
 tEquals :: Parser ()
 tEquals = tok (\case TEquals -> Just (); _ -> Nothing) <?> "="
 
--- ruleParser :: Parser Rule
--- ruleParser = do
---   lhs <- program
---   tEquals
---   rhs <- program
---   pure (Rule lhs rhs)
 ruleParser :: Parser Rule
 ruleParser = do
   lhs <- program

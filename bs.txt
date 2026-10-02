@@ -1,10 +1,10 @@
--- FLIN bubble sort
+-- FLIN bubble sort; returns integer list in increasing order
 -- call as e.g. bsort([5,3,1])
--- note that function order is so always know number outputs when used in RHS
+-- function order is so always know number outputs when used in RHS
 
-bubble([],x)     = M([x])
-bubble(M(xs),x)  = M(x:xs)
-bubble(_y:ys,_x) = ? x<y => x:bubble(ys,y) ? _ => y:bubble(ys,x)
+bubble([],x)    = M([x])
+bubble(M(xs),x) = M(x:xs)
+bubble(_y:ys,x) = ? x<y => x:bubble(ys,y) ? _ => y:bubble(ys,x)
 
 bsort([])    = []
 bsort(x:xs)  = bsort(bubble(xs,x))
