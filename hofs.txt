@@ -1,14 +1,30 @@
 -- new HOFs examples
 -- -imm required
 
-add(0,y)   = y
-add(_x,_y) = succ(add(pred(x),y))
 
-incr(_n) = @(/x add(x,1),n)
+incr(_n) = @(/x #add(x,1),n)
+-- incr(3)
 
-map([], f)    = []
-map(x:xs, f)  = (@(f,x) : map(xs,f))
--- let [f1,f2] ~ !dup(f) in 
---app(_x,^f)     = ^f(x)
+map([],f)   = []
+map(x:xs,f) = (@(f,x) : map(xs,f))
+-- map([1,2,3], /x #add(x,1))
 
---comp(_x,^f,^g) = ^f(^g(x)) 
+filter([],f)    = []
+filter(_x:xs,f) = check(@(f,x),x,xs,f)
+check(True,x,xs,f)  =  x:(filter(xs,f))
+check(False,x,xs,f) = filter(xs,f)
+-- filter([0,1,0,2,0,3], /x isZ(x))
+
+-- "not" is a reserved word in INPLA
+neg(True)  = False
+neg(False) = True
+
+even(0) = True
+even(1) = False
+even(_n) = neg(even(#sub(1,n)))
+
+isZ(0)  = True
+isZ(_n) = False
+
+
+

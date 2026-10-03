@@ -321,10 +321,12 @@ renameWire (Var v) wire var =
 
 netToINPLA :: Net -> String
 netToINPLA (agents, wires)
-  | null inplaAgents = inplaWires  ++ ";"
-  | null inplaWires  = inplaAgents ++ ";"
-  | otherwise        = inplaAgents ++ "," ++ inplaWires ++ ";"
+  = filter (/= '$') result
   where
+    result
+      | null inplaAgents = inplaWires  ++ ";"
+      | null inplaWires  = inplaAgents ++ ";"
+      | otherwise        = inplaAgents ++ "," ++ inplaWires ++ ";"
     (cleanAgents, cleanWires) = cleanNet (agents, wires)
     (inplaAgents, inplaWires) = (agentsToINPLA cleanAgents, wiresToINPLA cleanWires)
 
