@@ -19,12 +19,18 @@ check(False,x,xs,f) = filter(xs,f)
 neg(True)  = False
 neg(False) = True
 
-even(0) = True
-even(1) = False
+even(0)  = True
+even(1)  = False
 even(_n) = neg(even(#sub(1,n)))
 
 isZ(0)  = True
 isZ(_n) = False
+
+foldl([],f,z)   = z
+--foldl(x:xs,f,z) = foldl
+
+isEven(0) = True
+isEven(_n) = ? n<2 => True ? _ => False
 
 
 
