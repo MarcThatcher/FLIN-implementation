@@ -1,0 +1,9 @@
+fib(0)  = 0
+fib(1)  = 1 
+fib(_n) = #add(fib(#sub(1,_n)), fib(#sub(2,_n)))
+
+fibS(0)  = fib(0)
+fibS(_n) = fib(0) : fibS(#add(1,_n))
+
+ints(0) = 0
+ints(_n) = n : ints(#add(_n,1))

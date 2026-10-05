@@ -1,0 +1,15 @@
+-- -imm
+
+--fold'(r,f,z,x)><[] => i_app(r,z)~r1, i_app(r1,x)~f;
+fold'([],f,z,x) = @(@(f,x),z)
+
+--fold'(r,f,z,x)><(y:ys) => fold'(r,f1,rz,y)~ys, i_app(rz,z)~r1, i_app(r1,x)~f2, Dup(f1,f2)~f;
+fold'(y:ys,f,z,x) = fold'(ys,f,y,@(@(f,x),z)) 
+
+--fold(r,f,z)><[] => r~z, Eraser~f;
+fold([],f,z) = z
+
+--fold(r,f,z)><(x:xs) => fold'(r,f,z,x)~xs;
+fold(x:xs,f,z) = fold'(xs,f,z,x)
+
+--fold(r,f,0)~[1,2,3], Lambda(a,b)~f, Lambda(c,d)~b, Add(d,a)~c;

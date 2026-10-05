@@ -1,2 +1,4 @@
 fact(0)  = 1
-fact(_n) = #mul(_n,fact(#sub(_n,1)))
+fact(_n) = #mul(_n,fact(#sub(1,_n)))
+
+f(_n) = ? n==0 => 1 ? _ => #mul(n,f(#sub(1,n)))
