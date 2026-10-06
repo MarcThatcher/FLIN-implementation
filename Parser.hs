@@ -4,7 +4,7 @@
 module Parser where
 
 import Text.Parsec            (Parsec, parse, eof, (<|>), (<?>), 
-                               sepBy, sepBy1, try, lookAhead, option, optionMaybe)
+                               sepBy, sepBy1, try, lookAhead, option, optionMaybe, many1)
 import Text.Parsec.Combinator (chainl1, chainr1)
 import Text.Parsec.Prim       (tokenPrim)
 import Text.Parsec.Error      (ParseError)
@@ -136,12 +136,19 @@ funcTerm = try $ do
                  else name
   pure (Func funcName terms)
 
+-- lambdaTerm :: Parser Term
+-- lambdaTerm = do
+--   tLam
+--   x <- lowerID
+--   f <- funcTerm
+--   pure (Lambda x f)
 lambdaTerm :: Parser Term
 lambdaTerm = do
-  tLam
-  x <- lowerID
+  xs <- many1 $ do
+    tLam
+    lowerID
   f <- funcTerm
-  pure (Lambda x f)
+  pure (foldr Lambda f xs)
 
 varList :: Parser [VarName]
 varList = do

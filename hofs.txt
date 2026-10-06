@@ -2,18 +2,18 @@
 -- -imm required
 
 
-incr(_n) = @(/x #add(x,1),n)
+incr(_n) = @(\x #add(x,1),n)
 -- incr(3)
 
 map([],f)   = []
 map(x:xs,f) = (@(f,x) : map(xs,f))
--- map([1,2,3], /x #add(x,1))
+-- map([1,2,3], \x #add(x,1))
 
 filter([],f)    = []
 filter(_x:xs,f) = check(@(f,x),x,xs,f)
 check(True,x,xs,f)  =  x:(filter(xs,f))
 check(False,x,xs,f) = filter(xs,f)
--- filter([0,1,0,2,0,3], /x isZ(x))
+-- filter([0,1,0,2,0,3], \x isZ(x))
 
 -- "not" is a reserved word in INPLA
 neg(True)  = False
@@ -26,11 +26,16 @@ even(_n) = neg(even(#sub(1,n)))
 isZ(0)  = True
 isZ(_n) = False
 
-foldl([],f,z)   = z
---foldl(x:xs,f,z) = foldl
 
-isEven(0) = True
-isEven(_n) = ? n<2 => True ? _ => False
+-- fold
+fold'([],f,z,x)   = @(@(f,x),z)
+fold'(y:ys,f,z,x) = fold'(ys,f,y,@(@(f,x),z)) 
+
+fold([],f,z)   = z
+fold(x:xs,f,z) = fold'(xs,f,z,x)
+
+-- fold([1,2,3],\x \y #add(x,y),0)
+
 
 
 

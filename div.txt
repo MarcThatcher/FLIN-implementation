@@ -1,2 +1,4 @@
+-- -imm
+
 safediv(0,y)  = Error
-safediv(_x,y) = #div(_x,y)
+safediv(_x,y) = #div(x,y)

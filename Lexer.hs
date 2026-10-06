@@ -65,7 +65,7 @@ lexToken = choice
   , symbol '*'  >> pure TStar
   , symbol '^'  >> pure THat
   , symbol '@' >> pure (TLowerID "i_app")
-  , symbol '/' >> pure TLam
+  , symbol '\\' >> pure TLam
   , symbol '#' >> pure THash
   , symbol '?' >> pure TQuestion
   , symbol '<' >> pure TLess

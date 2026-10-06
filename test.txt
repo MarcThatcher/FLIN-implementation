@@ -1,2 +1,3 @@
-foo(0,y) = #sub(0,y)
-foo(_x,y)= #sub(_x,y)
+--incr(_n) = @(\x #add(x,1),n)
+
+fact(_n) = ? n==0 => 1 ? _ => #mul(n,fact(#sub(n,1)))
