@@ -1,7 +1,0 @@
---incr(_n) = @(\x #add(x,1),n)
-
--- fact(_n) = ? n==0 => 1 ? _ => #mul(n,fact(#sub(n,1)))
-
-filterA(Dummy(x)) = x
-filterA(A(x)) = filterA(x)
-filterA(B(x)) = B(filterA(x))

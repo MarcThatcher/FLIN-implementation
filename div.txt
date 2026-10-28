@@ -1,4 +1,0 @@
--- -imm
-
-safediv(0,y)  = Error
-safediv(_x,y) = #div(x,y)

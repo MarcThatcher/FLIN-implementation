@@ -1,8 +1,0 @@
--- max example
--- -imm -mpp required
-
-e(*) = -
-
-max(Z,y)   = y
-max(x,Z)   = x
---max(_x,_y) = succ(max(pred(x),pred(y)))
