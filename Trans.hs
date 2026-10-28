@@ -23,8 +23,8 @@ type LUT    = [(String,Int)]         -- (func label, number outputs)
  If -bat is there, calls batch else calls interactive.
  Both consider following flags:
  -imm = implicit memory management (adds erase & duplication on RHS of rules)
- -npm = nested pattern matching (implements Interaction Nets with NPM by Hassan & Sato)
- -mpp = multiple principle ports (implements Macros for Interaction Nets by Sinot & Mackie)
+ -npm = nested pattern matching (implements Interaction Nets with NPM by Hassan & Sato) [not included in final paper]
+ -mpp = multiple principle ports (implements Macros for Interaction Nets by Sinot & Mackie)  [not included in final paper]
  -hof = deal with higher order functions
  Can have multiple flags.
  If -bat then file must have 0 or more rules followed by 1 or more blank lines and a term.
@@ -80,7 +80,7 @@ interactive args = do
     putStrLn ""
     replLoop lut
 
--- test for testing!! ****************************************************************
+-- test for testing!! 
 test args = do
     let filename = head (filter (`notElem` allFlags) args)
     inputFile <- readFile filename
@@ -210,11 +210,6 @@ trans (Func fName args) root net lut =
       (netAgents, netWires) = net
       (allAgents, allWires) =
         foldl
-          -- (\(as, ws) (arg, port) ->
-          --    let freshP       = port ++ "_0"
-          --        (as', ws')   = trans arg freshP (as, ws) lut
-          --        newWire      = (freshP, port)  -- connect arg result to function input
-          --    in  (as', newWire : ws'))
           (\(as, ws) (arg, port) ->
                let freshP       = port ++ "_0"
                    (as', ws')   = trans arg freshP ([], []) lut
@@ -278,18 +273,9 @@ trans (Conditional condExprList) root (agents,wires) lut =
 trans (FuncApp f args) root (agents, wires) _ =
     error "FuncApp should have been expanded before translation"
 
-
 -- INPLA arithmetic is of the form Sub(r,y)~x -> r=y-x, so we need to swap order of inputs to arithmetic functions
 swapArithmetic :: Term -> Term
-swapArithmetic = id
--- swapArithmetic (Func f args)
---   | f `elem` ["Add", "Sub", "Mul", "Div", "Mod"] =
---       case args of
---         x:y:rest -> Func f (y:x:rest)
---         _        -> Func f args
---   | otherwise = Func f args
--- swapArithmetic t = t
-
+swapArithmetic = id -- not implemented
 
 -- Convert a term to its INPLA string representation for use in list literals
 termToINPLA :: Term -> String
@@ -535,10 +521,6 @@ transRule rule lut npm =
                              in cleanNet (nub agents,nub wires)
        in let lhsStr = transActivePair lhs
           in lhsStr ++ netToINPLA (renameNetPorts lhsStr rhs)
-    -- in if npm && numAgents > 2
-    --    then applyT lhs t2 root lut npm
-    --    else let lhsStr = transActivePair lhs
-    --         in lhsStr ++ netToINPLA (renameNetPorts lhsStr rhs)
 
 isConditional :: Rule -> Bool
 isConditional (Rule _ (Conditional _)) = True
@@ -729,9 +711,6 @@ transActivePair (agents, wire) =
       a2auxsList       = listPorts a2auxs
       a1auxsListString = "(" ++ a1auxsList ++ ")"
       a2nameStr        = if a2name == "!Cons" then "" else a2name
-      -- a2auxsListString = if null a2auxsList then ""
-      --                       else if a2name == "!Cons" then "(" ++ head a2auxs ++ ":" ++ last a2auxs ++ ")"
-      --                            else "(" ++ a2auxsList ++ ")"
       a2auxsListString = if null a2auxsList then ""
                    else if a2name == "!Cons" then
                      if "int " `isPrefixOf` head a2auxs
@@ -1071,57 +1050,6 @@ groupNatRulesFor fName rules =
                        []    -> Nothing
     in (litRules, varRule)
 
---- Generate a single guarded INPLA rule from Nat literal rules + catch-all
-{-
-makeGuardedNatRule :: [Rule] -> Maybe Rule -> LUT -> String
-makeGuardedNatRule litRules mVarRule lut =
-    let -- get variable name from NatVar rule, default to "x_0"
-        varName = case mVarRule of
-                    Just (Rule (Func _ args) _) -> head [v | NatVar v <- args]
-                    Nothing                     -> "x_0"
-        -- get header from first rule
-        Rule (Func fName args) _ = case mVarRule of
-                                     Just r  -> r
-                                     Nothing -> head litRules
-        -- get output ports from LHS translation
-        lhs        = transLHS (Func fName args) "r" lut
-        (agents,_) = lhs
-        (_, _, auxPorts) = head agents
-        outPorts = listPorts auxPorts
-        header   = fName ++ "(" ++ outPorts ++ ") >< (int " ++ varName ++ ")"
-        -- translate a RHS, rooting Par components at the LHS output ports
-        -- (otherwise trans's Par case invents its own roots, e.g. r_0 vs rr_0)
-        numOuts  = funcNumOuts fName lut
-        rhsRoots = take numOuts auxPorts
-        transRHS rhs = case rhs of
-            Par _ _ -> cleanNet $ foldl
-                           (\(aAcc, wAcc) (t, p) ->
-                                let (a', w') = trans t p ([], []) lut
-                                in (aAcc ++ a', wAcc ++ w'))
-                           ([], [])
-                           (zip (flatPar rhs) (rhsRoots ++ repeat "")) -- adds dummy (empty) port for nullary agent else lose in zip
-            _       -> cleanNet $ trans rhs "r" ([], []) lut
-        -- translate each lit rule to get its RHS
-        transLit (Rule (Func f args) rhs) =
-            let n       = head [n | Nat n <- args]
-                rhsStr' = init (netToINPLA (transRHS rhs))
-            in " | " ++ varName ++ "==" ++ show n ++ " => " ++ rhsStr'
-        guards   = concatMap transLit litRules
-        catchAll = case mVarRule of
-                     Just (Rule (Func f ((NatVar var):vars)) rhs) ->
-                         let rhsNet  = transRHS rhs
-                             rhsNet' = if null (fst rhsNet)
-                                       then let ports = snd rhsNet
-                                            in ([], map (\(a, b) -> (a++"~"++var, b++"~"++var)) ports)
-                                       else rhsNet
-                             rhsStr  = if null (fst rhsNet)
-                                       then intercalate "," (concatMap (\(a, b) -> [a, b]) (snd rhsNet'))
-                                       else init (netToINPLA rhsNet)
-                         in " | _ => " ++ rhsStr
-                     Nothing -> " | _ => r~ERROR"
-    in header ++ guards ++ catchAll ++ ";"
--}
-
 makeGuardedNatRule :: [Rule] -> Maybe Rule -> LUT -> String
 makeGuardedNatRule litRules mVarRule lut =
     let
@@ -1283,12 +1211,6 @@ groupMPPRules rules =
         keys     = nub [k | Just k <- map mppKey mppRules]
     in [(k, [r | r <- mppRules, mppKey r == Just k]) | k <- keys]
 
--- Generate dispatch rule and auxiliary rules for a group of MPP rules
--- e.g. max(S(x),Z)=S(x) and max(S(x),S(y))=S(max(x,y))
--- becomes:
--- dispatch: max(S(x),y) = mppMaxS(y,x)
--- aux:      mppMaxS(Z,x) = S(x)
---           mppMaxS(S(y),x) = S(max(x,y))
 expandMPPGroup :: (FuncName, ConstrName) -> [Rule] -> [Rule]
 expandMPPGroup (fName, cName) rules =
     let -- auxiliary function name; '!' (from !Cons) replaced with '_' for INPLA

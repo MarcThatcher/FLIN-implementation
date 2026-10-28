@@ -1,5 +1,4 @@
 {-# LANGUAGE LambdaCase #-}
---{-# LANGUAGE FlexibleContexts #-}
 
 module Parser where
 
@@ -136,12 +135,6 @@ funcTerm = try $ do
                  else name
   pure (Func funcName terms)
 
--- lambdaTerm :: Parser Term
--- lambdaTerm = do
---   tLam
---   x <- lowerID
---   f <- funcTerm
---   pure (Lambda x f)
 lambdaTerm :: Parser Term
 lambdaTerm = do
   xs <- many1 $ do

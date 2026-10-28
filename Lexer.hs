@@ -1,5 +1,3 @@
---{-# LANGUAGE FlexibleContexts #-}
-
 module Lexer where
 
 import Control.Monad      (guard)
