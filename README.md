@@ -99,6 +99,8 @@ Flags can be given in any order and multiple flags can be used at once.
 
 The following sections describe how the flags work and give the files that demonstrate them.
 
+Repeat Beware #2 !! from above: The files in `example files` are in DOS text format.
+For use on UNIX-type systems, including macOS, use `example_files_unix`.
 
 ### 4.1) Base FLIN
 Base FLIN is the compilation method if run without any flags.

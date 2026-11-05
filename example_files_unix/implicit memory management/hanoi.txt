@@ -1,0 +1,9 @@
+-- towers of hanoi
+-- -imm
+
+-- append(l1,l2) returns l2++l1
+append([],ys)   = ys
+append(x:xs,ys) = x:append(xs,ys)
+
+hanoi(0,  src, tgt, aux) = [] 
+hanoi(_n, src, tgt, aux) = append(hanoi(#sub(1,n),src,aux,tgt), Tuple(n,src,tgt):hanoi(#sub(1,n),aux,tgt,src))

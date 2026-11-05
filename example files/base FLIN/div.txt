@@ -1,2 +1,0 @@
-safediv(0,y)  = Error
-safediv(_x,_y) = #div(_x,_y)

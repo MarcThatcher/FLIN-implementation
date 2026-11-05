@@ -1,12 +1,12 @@
 -- generics examples
 -- no flags required
 
--- some rules to give constructors ; (int x) cases are always generated
+-- some rules to give constructors to inhabit generic
 add(Z,y)    = y
 add(S(x),y) = S(add(x,y))
+isNil(Nil)  = True
 
 -- generics
-
 -- erasure
 e(*)    = -
 e(*(x)) = e(x)

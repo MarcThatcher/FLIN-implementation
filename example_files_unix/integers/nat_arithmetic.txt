@@ -6,7 +6,6 @@ e(*) = -
 
 -- duplication
 d(*)  = * | *
--- or do d(0) = 0|0 & d(_x) = x | x ??
 
 -- addition. "y" in first definition is not "_y" as not relying on it being an natural number constructor
 add(0,y)   = y
@@ -37,20 +36,12 @@ ack(_x,_y)  = ackp(y,pred(x))
 ackp(0,x)   = ack(x,1)
 ackp(_y,_x) = let [x1,x2]~d(x) in ack(x1,ack(succ(x2),pred(y)))
 
-
 -- natural number equality
 isEq(0,y)   = isZ(y)
 isEq(_x,_y) = ifZ(y,False,isEq(pred(x),pred(y)))
 
 isZ(0)  = True
 isZ(_n) = False
-
--- less than or equal to
-<copy!>
-
--- greater than or equal to
-<work it out!>
-
 
 -- logical operators
 not(True)  = False

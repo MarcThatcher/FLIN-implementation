@@ -6,4 +6,4 @@ fold'(y:ys,f,z,x) = fold'(ys,f,y,@(@(f,x),z))
 
 fold([],f,z) = z
 
-fold(x:xs,f,z) = fold'(xs,f,z,x)
+fold(x:xs,f,z) = fold'(xs,f,x,z)
